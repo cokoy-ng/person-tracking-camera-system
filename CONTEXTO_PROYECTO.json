@@ -1,0 +1,172 @@
+{
+  "version": 1,
+  "actualizado": "2026-09-12T23:47:51-05:00",
+  "idioma": "es",
+  "proposito": "Memoria de continuidad para retomar rápidamente este proyecto. Leer primero este archivo y después consultar solo los archivos relevantes para la siguiente tarea.",
+  "resumen": "Integración local de cámara USB, modelos existentes de detección de rostro y expresión facial, y control de un servo SG90 mediante Arduino Uno. El código está en Ubuntu WSL y el acceso USB y la inferencia se ejecutan en Windows. Existe un lanzador start.sh probado. La cuenta GitHub cokoy-ng ya fue autenticada por el usuario y el repositorio de destino ya está clonado; falta incorporar y publicar el proyecto allí.",
+  "rutas": {
+    "proyecto_fuente": "/home/tucu/yo/camera",
+    "readme_principal": "/home/tucu/yo/camera/README.md",
+    "contexto": "/home/tucu/yo/camera/CONTEXTO_PROYECTO.json",
+    "repositorio_destino": "/home/tucu/yo/person-tracking-camera-system",
+    "python_base_windows": "/mnt/c/Users/User/AppData/Local/Programs/Python/Python312/python.exe",
+    "python_ia_windows": "/mnt/c/Users/User/AppData/Local/camera-ai/venv/Scripts/python.exe"
+  },
+  "objetivo_del_usuario": {
+    "actual": "Conservar lo desarrollado y subirlo a cokoy-ng/person-tracking-camera-system.",
+    "producto_futuro": "Varias cámaras conectadas por cable, cada una movida por servomotores, detectarán personas y orientarán la cámara para mantener el seguimiento visual.",
+    "nombre": "person-tracking-camera-system",
+    "descripcion": "Sistema de cámaras conectadas por cable que utiliza visión artificial y servomotores para detectar y seguir personas automáticamente.",
+    "diferencia_con_el_prototipo": "Ahora solo se usa una cámara y un servo. El ángulo se calcula a partir de la coordenada horizontal del rostro con una cámara fija. Aún falta implementar control de centrado para una cámara montada sobre el servo, detección general de personas y coordinación multicámara."
+  },
+  "mapa": {
+    "README.md": "Documentación general: historia del proyecto, carpetas, arquitectura, comandos, entornos, resultados comprobados y límites.",
+    "start.sh": "Lanzador WSL ejecutable desde cualquier directorio. Lee .env opcional, detecta Python Windows 3.12, prepara el entorno local de IA, verifica versiones y pip check, prepara/activa el entorno Linux y ejecuta tracking.py. Admite --check y --setup-only. Usa flock para evitar duplicar este lanzador.",
+    ".env.example": "Plantilla opcional de CAMERA_NAME, ARDUINO_PORT, CAMERA_REVERSE, ARDUINO_WINDOWS_PYTHON y CAMERA_AI_PYTHON. No contiene credenciales.",
+    ".gitignore": "Excluye .env; las carpetas arduino y perip tienen exclusiones adicionales.",
+    "digram/": "Esquema PDF, imagen del circuito visual_circuito.png y lista de materiales bom.csv.",
+    "servo_60_grados/servo_60_grados.ino": "Referencia autónoma de Arduino: D2, alternancia 0 y 60 grados. Cargarlo reemplaza el firmware de control por Python.",
+    "arduino/servo.py": "Controlador serie USB. Incluye USB, WindowsBridge y CLI --check, --angle, --demo, --cycles y --port.",
+    "arduino/firmware/servo_usb/servo_usb.ino": "Firmware USB cargado durante la integración. Recibe PING, SET y STOP, usa D2 y espera órdenes al iniciar.",
+    "arduino/upload.ps1": "Compila, carga y verifica el firmware mediante arduino-cli de la instalación Windows de Arduino IDE.",
+    "arduino/README.md": "Detalle del controlador, montaje, protocolo y carga del firmware. La frase antigua sobre webcam describe esa etapa; la integración posterior está en perip.",
+    "perip/camera.py": "Lista cámaras, selecciona por nombre, muestra video, comprueba 30 fotogramas o guarda una foto. WSL delega en .venv-win.",
+    "perip/servo.py": "Entrada mediante runpy al controlador arduino/servo.py, sin duplicarlo.",
+    "perip/tracking.py": "Integra cámara, modelos, selección del rostro de mayor tamaño, control del servo y ventana. WSL lanza Windows y usa un archivo temporal de parada para Ctrl+C.",
+    "perip/tracking_control.py": "Clase FaceServo: lógica pura de ángulo, detección sostenida, frecuencia, límites, inversión y pérdida del rostro.",
+    "perip/test_tracking_control.py": "Cinco pruebas unitarias sin hardware.",
+    "perip/windows_ai.py": "Resuelve CAMERA_AI_PYTHON o detecta el entorno camera-ai/venv en el disco Windows.",
+    "perip/check_requirements.py": "Verifica Python 3.12 y versiones fijadas mediante importlib.metadata, sin cargar TensorFlow ni consultar la red.",
+    "perip/setup.py": "Instala entornos de cámara básica Windows y control WSL.",
+    "perip/setup_ai.py": "Instala el entorno de IA en LOCALAPPDATA de Windows.",
+    "perip/captures/": "Fotos generadas; excluidas de Git.",
+    "perip/README.md": "Guía detallada de cámara, servo, integración y lanzador.",
+    "emotion-detector/": "Clon independiente de PLINIORZAVALA/emotion-detector, rama dev, con cambios locales de integración.",
+    "emotion-detector/main.py": "Programa original preservado como referencia. No es el punto de entrada recomendado de esta integración.",
+    "emotion-detector/run_camera.py": "Entrada alternativa que ejecuta perip/tracking.py.",
+    "emotion-detector/detector.py": "Reutiliza el detector Caffe y el clasificador Keras 2 con BlurLayer. Resuelve rutas y carga una copia temporal local de los pesos HDF5.",
+    "emotion-detector/requirements-windows.txt": "Versiones de dependencias de la integración, separadas de los requisitos originales.",
+    "emotion-detector/face_detector/": "deploy.prototxt y res10_300x300_ssd_iter_140000.caffemodel.",
+    "emotion-detector/model/": "67emotion_human.json y 67emotion_human.h5, reutilizados sin reentrenar."
+  },
+  "hardware": {
+    "placa": "Arduino Uno",
+    "servo": "SG90 posicional",
+    "senal_servo": "D2",
+    "alimentacion_documentada": "5V y GND según el montaje existente",
+    "puerto": "COM3",
+    "baudios": 115200,
+    "camara": "USB 2.0 CAMERA",
+    "indice_observado": 2,
+    "otras_camaras": ["HP HD Camera", "Camo"],
+    "resolucion_probada": "640x480",
+    "nota": "Seleccionar la cámara por nombre; el índice y el puerto deben verificarse si cambian las conexiones. No asumir que OK serie o luces RX/TX/L confirman giro físico."
+  },
+  "comportamiento_actual": {
+    "seleccion": "Rostro de mayor área, sin reconocimiento de identidad persistente.",
+    "angulo": "Posición horizontal absoluta: izquierda 0, centro 45, derecha 90 grados.",
+    "estabilidad": "Tres detecciones consecutivas; cambios de hasta 5 grados separados al menos 150 ms; evita ajustes inferiores a 3 grados mientras está activo.",
+    "perdida": "STOP y liberación si no se detectan rostros durante un segundo.",
+    "controles": "Espacio pausa/reanuda el servo. Q, Esc o cerrar ventana terminan. Ctrl+C solicita la parada desde WSL.",
+    "expresiones": "Se muestra una etiqueta estimada entre angry, disgust, fear, happy, neutral, sad y surprise. No representa una medición del estado emocional y no gobierna el movimiento.",
+    "ejecucion": "Aplicación de escritorio en primer plano; no es un servicio systemd, HTTP ni un arranque automático al encender Windows."
+  },
+  "entornos": {
+    "arduino/.venv": "Entorno inicial Linux del controlador, conservado.",
+    "perip/.venv": "Entorno Linux para los lanzadores. La ejecución integrada solo necesita biblioteca estándar aquí.",
+    "perip/.venv-win": "Entorno Windows para cámara básica con OpenCV.",
+    "perip/.venv-ai": "Entorno de IA inicial en la carpeta compartida WSL. Está en disco, pero ya no lo utiliza el lanzador actual.",
+    "activo_ia": "C:\\Users\\User\\AppData\\Local\\camera-ai\\venv",
+    "dependencias_ia": {
+      "tensorflow": "2.16.2",
+      "tf-keras": "2.16.0",
+      "numpy": "1.26.4",
+      "opencv-python": "4.11.0.86",
+      "cv2-enumerate-cameras": "1.3.3",
+      "pyserial": "3.5"
+    }
+  },
+  "historia_y_problemas_resueltos": [
+    "El servo funcionaba con el sketch de Arduino IDE en D2. Python mantuvo ese pin.",
+    "Arduino aceptaba SET pero el motor no se movía. Tampoco se movió al restaurar el sketch autónomo original. El usuario reconectó el cable del servomotor y confirmó que volvió a funcionar. No atribuir la solución a un cambio de pin ni al orden de llamadas del firmware.",
+    "Hubo errores de acceso y de dispositivo en COM3; se comprobó ocupación del puerto y se reconectó USB.",
+    "Después del diagnóstico se restauró y verificó servo_usb para control por Python.",
+    "Se centralizaron los comandos en perip y se detectó la cámara USB externa por nombre.",
+    "Se clonó emotion-detector/dev y se adaptó su carga Keras 2 al Python 3.12 de Windows.",
+    "Cargar TensorFlow desde WSL fue muy lento. Se instaló el entorno en el disco local de Windows.",
+    "HDF5 falló al bloquear pesos situados en la carpeta compartida. detector.py usa una copia temporal local sin modificar los pesos originales.",
+    "Se sustituyó el monitor de stdin del lanzador por un archivo temporal de parada.",
+    "La integración detectó rostro y obtuvo OK 45, OK 50 y OK STOP.",
+    "Se documentó la evolución en README.md y se creó start.sh con comprobación e instalación condicional de dependencias."
+  ],
+  "verificacion_realizada": {
+    "servo_fisico": "El usuario confirmó que volvió a funcionar después de reconectar el cable, durante la etapa de diagnóstico.",
+    "camara": "30 fotogramas 640x480 recibidos; vista en vivo y foto guardada comprobadas.",
+    "modelos": "Carga completa y una inferencia con siete salidas finitas comprobadas.",
+    "integracion": "Detección real y órdenes al Arduino confirmadas; no se midió el ángulo físico durante el seguimiento.",
+    "pruebas_unitarias": "Cinco pruebas de FaceServo pasaron.",
+    "start_sh": "bash -n, ayuda desde otra carpeta y rechazo de segunda ejecución comprobados. start.sh --check se ejecutó desde /tmp, validó dependencias y modelos y terminó con código 0.",
+    "limite_prueba_instalador": "La prueba del lanzador usó dependencias ya instaladas; no se probó desde un Windows vacío.",
+    "estado_procesos_actual": "No verificado al guardar este contexto. Una aplicación se dejó abierta durante pruebas anteriores; no asumir que siga activa ni iniciar otra sin comprobar disponibilidad."
+  },
+  "comandos": {
+    "arranque": "/home/tucu/yo/camera/start.sh",
+    "verificar_sin_dispositivos": "/home/tucu/yo/camera/start.sh --check",
+    "preparar_sin_ejecutar": "/home/tucu/yo/camera/start.sh --setup-only",
+    "prueba_camara_ia_sin_servo": "/home/tucu/yo/camera/start.sh --no-servo --seconds 10",
+    "rostro_servo_sin_expresiones": "/home/tucu/yo/camera/start.sh --face-only",
+    "sentido_inverso": "/home/tucu/yo/camera/start.sh --reverse",
+    "listar_camaras": "cd /home/tucu/yo/camera/perip && .venv/bin/python camera.py --list",
+    "comprobar_servo": "cd /home/tucu/yo/camera/perip && .venv/bin/python servo.py --port COM3 --check",
+    "tests": "cd /home/tucu/yo/camera && perip/.venv/bin/python -m unittest discover -s perip",
+    "cuenta_github": "gh api user --jq .login",
+    "estado_destino": "git -C /home/tucu/yo/person-tracking-camera-system status --short --branch",
+    "remoto_destino": "git -C /home/tucu/yo/person-tracking-camera-system remote -v"
+  },
+  "git_y_github": {
+    "cuenta_destino": "cokoy-ng",
+    "autenticacion": "El usuario instaló gh en WSL y completó gh auth login por navegador. Compartió una salida de gh api user --jq .login que confirmó cokoy-ng. No se almacenan códigos, tokens ni claves en este contexto.",
+    "otra_cuenta": "El usuario quiere conservar dos cuentas en este WSL. No borrar credenciales ni cerrar la otra sesión innecesariamente. La identidad del autor de commits es distinta de la cuenta de autenticación.",
+    "url_destino": "https://github.com/cokoy-ng/person-tracking-camera-system.git",
+    "clon_destino_verificado": {
+      "ruta": "/home/tucu/yo/person-tracking-camera-system",
+      "rama": "main",
+      "seguimiento": "origin/main",
+      "remoto_origin": "https://github.com/cokoy-ng/person-tracking-camera-system.git",
+      "ultimo_commit_local": "0cec94b this tests",
+      "contenido_visible": [".git/", "test.txt"],
+      "estado": "Sin cambios locales según git status al guardar este contexto. El proyecto camera aún no está copiado allí. No repetir git clone sobre esta carpeta."
+    },
+    "fuente_camera": "Las comprobaciones anteriores desde el entorno del asistente devolvieron que /home/tucu/yo/camera no era un repositorio Git válido. .git aparece como metadato restringido del entorno. No borrar ni modificar esa carpeta; trabajar con el clon de destino y volver a comprobar el estado si es necesario.",
+    "repositorio_ia": {
+      "url": "https://github.com/PLINIORZAVALA/emotion-detector.git",
+      "ruta": "/home/tucu/yo/camera/emotion-detector",
+      "rama": "dev",
+      "base": "1c53018 Update credits section with GitHub link",
+      "modificados": [".gitignore", "README.md"],
+      "nuevos": ["detector.py", "requirements-windows.txt", "run_camera.py"],
+      "publicacion": "Cambios locales aún sin commit ni push al repositorio externo."
+    },
+    "estrategia_propuesta": "Copiar el contenido de camera al clon destino mediante rsync, excluyendo todos los .git, entornos virtuales, .env, cachés y capturas. Así emotion-detector se incorpora como archivos normales incluyendo las adaptaciones locales, en vez de crear un gitlink que omita esos cambios. Conservar sus créditos y modelos. La copia y el push aún no se han realizado.",
+    "exclusiones_copia": [".git", ".venv*", "__pycache__", ".env", ".agents", ".codex", "captures/", ".tracking.lock", "*.log", "*.pid"],
+    "precaucion_destino": "Conservar test.txt y el historial existente; no usar rsync --delete, git reset destructivo ni push --force. No modificar el origin de emotion-detector para publicar el proyecto principal."
+  },
+  "siguiente_sesion": [
+    "Leer este JSON. La petición más reciente fue guardar contexto, no publicar durante esta operación.",
+    "Confirmar la siguiente intención del usuario si solo pide repasar; si pide continuar la subida, retomar ese trabajo sin volver a clonar.",
+    "Verificar gh api user --jq .login, estado de /home/tucu/yo/person-tracking-camera-system y origin antes de escribir o subir.",
+    "Copiar el proyecto al clon destino excluyendo metadatos y entornos; incluir este contexto, la documentación y las adaptaciones de emotion-detector. Conservar los archivos y commits ya presentes en el destino.",
+    "Configurar autor y credenciales de Git a nivel local del repositorio destino para cokoy-ng. Revisar archivos preparados y exclusiones antes del commit.",
+    "Revisar rutas absolutas de README y contexto tras la copia. start.sh calcula su raíz dinámicamente, pero los ejemplos de documentación siguen apuntando a /home/tucu/yo/camera.",
+    "Si la publicación está autorizada por la continuación del usuario, crear el commit y hacer push normal a origin/main, sin forzar.",
+    "Actualizar este contexto con lo realmente completado. El siguiente desarrollo funcional sería el seguimiento con cámara montada en el servo y, posteriormente, varias cámaras."
+  ],
+  "preferencias_de_trabajo": [
+    "Comunicar en español, con comandos claros y pasos concretos.",
+    "El usuario prefiere reutilizar el repositorio de IA ya funcional y evitar complejidad innecesaria.",
+    "No repetir instalaciones, clonaciones ni pruebas ya comprobadas salvo que aparezcan cambios o fallos que lo justifiquen.",
+    "Distinguir confirmación de software, observación física y funciones futuras.",
+    "No guardar credenciales ni códigos de autenticación en archivos de contexto.",
+    "Para ejecutar Python de Windows, usar cámara/USB o instalar paquetes desde herramientas del asistente puede ser necesaria autorización fuera del aislamiento; no atribuir esos bloqueos al proyecto."
+  ]
+}
