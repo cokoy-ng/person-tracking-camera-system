@@ -1,67 +1,91 @@
-# Cámara USB, detección de rostro y servo con Arduino
+# Cámara USB, detección de rostros y personas, servo y luz con Arduino
 
-Este proyecto conecta una cámara USB con los modelos de `emotion-detector` y
-un servomotor controlado por Arduino Uno. Python detecta rostros en la imagen,
-muestra una estimación de expresión facial y envía un ángulo al servo según la
-posición horizontal del rostro seleccionado.
+Sistema local que conecta una cámara USB con modelos de visión artificial y un
+Arduino Uno. Python detecta **rostros** (con estimación de expresión facial) y
+**personas**, orienta un servomotor SG90 hacia el objetivo elegido y controla un
+**relé de luz** por presencia y por sonido.
 
-El código se trabaja desde VS Code / Ubuntu WSL en `/home/tucu/yo/camera`.
-La cámara y el Arduino están conectados por USB a Windows, donde se ejecuta el
-acceso a los dispositivos. No hace falta abrir Arduino IDE para el uso diario.
+El repositorio vive en `/home/tucu/yo/person-tracking-camera-system` y se trabaja
+desde VS Code / Ubuntu WSL. La cámara y el Arduino están conectados por USB a
+**Windows**, donde se ejecutan el acceso a los dispositivos y la inferencia.
+No hace falta abrir Arduino IDE para el uso diario.
 
-**Estado documentado: 12 de septiembre de 2026.** La integración llegó a abrir
-la cámara, cargar los modelos y enviar órdenes al servo a partir de un rostro
-detectado. Este README registra lo construido y comprobado hasta ese punto;
-no indica que la aplicación permanezca ejecutándose en todo momento.
+- [Rostros, personas y servo](HUMAN_DETECTION.md)
+- [Luz por presencia y sonido](LIGHT_CONTROL.md)
+- [Periféricos e integración](perip/README.md)
+- [Control y firmware del servo](arduino/README.md)
+- [Repositorio de IA](emotion-detector/README.md)
+
+## Estado documentado: 14 de septiembre de 2026
+
+Todo el sistema arranca y funciona de extremo a extremo, **salvo el sensor de
+sonido**, que hoy no entrega señal. Resumen de la última sesión de verificación:
+
+| Subsistema | Estado | Evidencia |
+| --- | --- | --- |
+| Lanzador `start.sh` | Correcto | Los cuatro pasos completos, `pip check` limpio |
+| Servo D2 | Correcto | `SET 40 -> OK 40` durante el seguimiento |
+| Relé de luz D3 | Correcto | `OK LIGHT ON` al detectar presencia |
+| Detección de rostros y personas | Correcta | 301 fotogramas en 15 s: 241 con rostro, 301 con persona |
+| Cámara `USB 2.0 CAMERA` | **Ausente** | Windows solo lista `HP HD Camera` y `Camo` |
+| Sensor de sonido D4 | **Sin señal** | 45 s de palmadas: 0 ruidos, 0 flancos, D4 fijo en `HIGH` |
+| Enlace serie COM3 | **Degradado** | 3 respuestas `ERR COMMAND` en 600 `PING` (0.5 %) |
+
+Estas comprobaciones son de software y de protocolo. Las respuestas `OK` del
+Arduino demuestran que procesó la orden, no que el eje girara ni que el foco
+encendiera físicamente.
 
 ## Ejecutar la integración
 
 El arranque recomendado prepara las variables, verifica las dependencias e
-inicia la integración en una sola ejecución desde WSL:
+inicia todo en una sola ejecución desde WSL:
 
 ```bash
-cd /home/tucu/yo/camera
+cd /home/tucu/yo/person-tracking-camera-system
 ./start.sh
 ```
 
-También funciona desde cualquier carpeta con `/home/tucu/yo/camera/start.sh`.
-El script requiere Python 3.12 ya instalado en Windows, interoperabilidad de WSL
+También funciona desde cualquier carpeta con la ruta completa del script.
+Requiere Python 3.12 ya instalado en Windows, interoperabilidad de WSL
 habilitada y el firmware USB del Arduino cargado. Crea el entorno de IA si falta
-e instala las versiones requeridas cuando faltan o difieren. Comprueba además
-la consistencia de las dependencias con `pip check`. Si todo coincide, no realiza
-una instalación ni consulta el índice de paquetes.
+e instala las versiones requeridas cuando faltan o difieren. Comprueba además la
+consistencia con `pip check`. Si todo coincide, no instala ni consulta el índice
+de paquetes.
 
 El lanzador detecta las rutas de Python, exporta `ARDUINO_WINDOWS_PYTHON` y
-`CAMERA_AI_PYTHON`, activa `perip/.venv` y pasa la cámara y el puerto al programa.
-Si falta el entorno de WSL, crea uno con la biblioteca estándar; las dependencias
-de IA y USB se ejecutan en el entorno de Windows. No es necesario ejecutar
-`source` manualmente para usar `start.sh`.
+`CAMERA_AI_PYTHON`, activa `perip/.venv` y pasa la cámara y el puerto al
+programa. Si falta el entorno de WSL, crea uno con la biblioteca estándar; la IA
+y pySerial se ejecutan en el entorno de Windows.
 
-Para cambiar la configuración predeterminada, copia `.env.example` a `.env`
-junto al script y edítalo. Es opcional: por defecto usa `USB 2.0 CAMERA`, COM3 y
-el sentido normal del servo. `.env` usa sintaxis de Bash y queda excluido de Git.
+Para cambiar la configuración predeterminada, copia `.env.example` a `.env` junto
+al script y edítalo. Es opcional: por defecto usa `USB 2.0 CAMERA`, COM3 y el
+sentido normal del servo. `.env` usa sintaxis de Bash y queda excluido de Git.
 
 ```bash
-./start.sh --check                    # Entorno y modelos; no abre dispositivos
-./start.sh --setup-only               # Solo preparar y verificar dependencias
-./start.sh --no-servo --seconds 10     # Cámara e IA durante diez segundos
-./start.sh --face-only --reverse      # Rostro y servo en sentido inverso
-./start.sh --port COM4 --index 2      # Elegir dispositivos explícitamente
+./start.sh --check                        # Entorno y modelos; no abre dispositivos
+./start.sh --setup-only                   # Solo preparar y verificar dependencias
+./start.sh --list                         # Listar cámaras de Windows
+./start.sh --no-servo --seconds 10        # Cámara e IA durante diez segundos
+./start.sh --face-only --reverse          # Solo rostros y servo en sentido inverso
+./start.sh --no-humans --port COM3        # Comportamiento anterior: rostros y expresiones
+./start.sh --port COM4 --index 0          # Elegir dispositivos explícitamente
+./start.sh --light-seconds 60             # Luz encendida 60 s tras la última señal
+./start.sh --sound-sensor off             # Ignorar la entrada D4 hasta reiniciar Arduino
+./start.sh --headless --seconds 15        # Sin ventana; requiere --seconds
 ```
 
-Las opciones de dispositivo de la línea de comandos prevalecen sobre los
-valores de `.env`. `CAMERA_REVERSE=1` activa la inversión; usa `0` para el sentido
-normal. `--check` verifica los modelos, pero no prueba la conexión física de los
-dispositivos: esta se realiza al arrancar la aplicación.
+Las opciones de dispositivo de la línea de comandos prevalecen sobre `.env`.
+`CAMERA_REVERSE=1` activa la inversión; usa `0` para el sentido normal.
+`--check` verifica los modelos, pero no prueba la conexión física de los
+dispositivos: esa se realiza al arrancar la aplicación.
 
 La aplicación se ejecuta en primer plano con una ventana, no como un servicio
 automático al iniciar Windows. El lanzador evita dos ejecuciones simultáneas de
-`start.sh`. No detiene otras aplicaciones que ocupen la cámara o COM3 ni vuelve a
-cargar el firmware automáticamente.
+`start.sh` mediante `flock`. No detiene otras aplicaciones que ocupen la cámara o
+COM3 ni vuelve a cargar el firmware automáticamente.
 
-Se abre una ventana de Windows con el video, los rostros detectados, la etiqueta
-estimada del modelo y el ángulo solicitado al servo. Cierra antes cualquier
-otra vista de la misma cámara, demo del servo o monitor serie que use COM3.
+En la ventana, los rostros aparecen en verde y las personas en azul; el texto
+indica el objetivo elegido, el ángulo solicitado y el estado lógico de la luz.
 
 | Control | Acción |
 | --- | --- |
@@ -70,20 +94,16 @@ otra vista de la misma cámara, demo del servo o monitor serie que use COM3.
 | Cerrar la ventana | Finalizar la sesión |
 | Ctrl+C en la terminal | Solicitar la parada desde WSL |
 
-También se puede iniciar desde la raíz con
-`python3 emotion-detector/run_camera.py`. Para esta integración se usa ese
-punto de entrada o `perip/tracking.py`; el `main.py` original del repositorio
-externo se conserva como referencia.
-
 ## Función de cada carpeta
 
 | Carpeta | Función y contenido |
 | --- | --- |
 | [`digram/`](digram/) | Documentación del montaje: diagrama PDF, imagen del circuito y lista de componentes `bom.csv`. El nombre de la carpeta se conserva tal como se creó. |
-| [`servo_60_grados/`](servo_60_grados/servo_60_grados.ino) | Sketch de referencia para Arduino IDE: alterna automáticamente entre 0° y 60° usando D2. Sirve para una prueba independiente de Python. |
-| [`arduino/`](arduino/README.md) | Controlador USB original en Python, firmware que recibe órdenes, dependencias y script de compilación/carga `upload.ps1`. Es la base del control manual y automático del servo. |
-| [`perip/`](perip/README.md) | Punto de entrada central para cámara, servo e integración con IA; contiene lanzadores, instaladores, lógica de movimiento y pruebas. |
-| [`emotion-detector/`](emotion-detector/README.md) | Repositorio externo clonado en la rama `dev`, con modelos de rostro y expresión facial. Incluye la adaptación local para reutilizarlos desde `perip`. |
+| [`servo_60_grados/`](servo_60_grados/servo_60_grados.ino) | Sketch de referencia para Arduino IDE: alterna automáticamente entre 0° y 60° usando D2. Prueba independiente de Python. |
+| [`arduino/`](arduino/README.md) | Controlador USB en Python, firmware que recibe órdenes, diagnóstico del sensor de sonido, pruebas del firmware en C++ y `upload.ps1`. |
+| [`perip/`](perip/README.md) | Punto de entrada central para cámara, servo e integración con IA; lanzadores, instaladores, lógica de movimiento y pruebas. |
+| [`emotion-detector/`](emotion-detector/README.md) | Repositorio externo clonado en la rama `dev`, con modelos de rostro y expresión facial. Incluye la adaptación local. |
+| [`human-detector/`](HUMAN_DETECTION.md) | Clon de MobileNet-SSD para detección de personas mediante OpenCV DNN. |
 
 Dentro de `perip/`:
 
@@ -91,61 +111,34 @@ Dentro de `perip/`:
 | --- | --- |
 | `camera.py` | Listar cámaras, abrir video y guardar una foto; selecciona la USB por nombre. |
 | `servo.py` | Reutilizar `arduino/servo.py` desde esta carpeta, sin duplicar el controlador. |
-| `tracking.py` | Coordinar cámara, detección, visualización, selección del rostro y comunicación con Arduino. |
-| `tracking_control.py` | Decidir los ángulos, los límites, la frecuencia de cambios y la parada al perder el rostro. |
+| `tracking.py` | Coordinar cámara, ambos detectores, visualización, selección del objetivo, servo y órdenes de luz. |
+| `tracking_control.py` | Decidir los ángulos, los límites, la frecuencia de cambios y la parada al perder el objetivo. |
+| `human_detector.py` | Adaptador de MobileNet-SSD; filtra la clase VOC 15 (persona) con confianza mínima 0.5. |
 | `windows_ai.py` | Localizar el Python de IA instalado en el disco de Windows. |
-| `check_requirements.py` | Comprobar las versiones instaladas sin importar TensorFlow ni consultar la red; lo utiliza `start.sh`. |
-| `setup.py` / `setup_ai.py` | Preparar los entornos de cámara/control básico y de IA, respectivamente. |
+| `check_requirements.py` | Comprobar las versiones instaladas sin importar TensorFlow ni consultar la red; lo usa `start.sh`. |
+| `setup.py` / `setup_ai.py` | Preparar los entornos de cámara/control básico y de IA. |
 | `test_tracking_control.py` | Pruebas de la lógica del servo sin activar hardware. |
+| `test_human_detector.py` | Pruebas del adaptador de detección de personas sin cámara. |
 | `captures/` | Fotos guardadas por `camera.py`; excluidas de Git. |
 
+Dentro de `arduino/`:
+
+| Archivo o carpeta | Responsabilidad |
+| --- | --- |
+| `servo.py` | Controlador serie: clase `USB`, puente a Windows y CLI `--check`, `--angle`, `--demo`. |
+| `check_sound.py` | Diagnóstico acotado de D4 y del estado lógico de D3, sin cámara. |
+| `firmware/servo_usb/servo_usb.ino` | Firmware activo: protocolo serie, servo D2, relé D3 y sensor D4. |
+| `firmware/servo_usb/light_control.h` | Lógica de temporizador de luz y del gesto de palmadas, aislada para poder probarla. |
+| `tests/test_light.cpp` | Pruebas de esa lógica compiladas en el PC, sin placa. |
+| `upload.ps1` | Compila, carga y verifica el firmware con `arduino-cli` de la instalación Windows de Arduino IDE. |
+
 Dentro de `emotion-detector/`, `face_detector/` contiene el detector Caffe y
-`model/` contiene la arquitectura JSON y los pesos HDF5 del clasificador.
-`detector.py` carga estos recursos mediante rutas independientes del directorio
-desde el que se ejecuta el programa. `requirements-windows.txt` fija las
-dependencias de la integración actual.
+`model/` la arquitectura JSON y los pesos HDF5 del clasificador. `detector.py`
+carga estos recursos mediante rutas independientes del directorio de ejecución.
 
-Las carpetas ocultas `.git/`, `.agents/` y `.codex/` corresponden a metadatos de
-versionado o del entorno de trabajo; no forman parte del flujo de los dispositivos.
-En la raíz, `start.sh` coordina el arranque y `.env.example` documenta las
-variables de configuración opcionales.
-
-## Cómo se llegó hasta aquí
-
-1. **Prueba autónoma con Arduino IDE.** Se partió de un montaje que movía el
-   servo mediante la biblioteca `Servo`, con señal en D2. Además del sketch
-   local de 60°, el sketch usado en Windows (`sketch_sep12a`) alternaba 0° y 90°.
-2. **Migración del control a Python.** Se creó el firmware `servo_usb`, que
-   recibe comandos por el puerto serie, y `arduino/servo.py`, que permite
-   comprobar la conexión, solicitar un ángulo y ejecutar ciclos. Se mantuvo D2.
-3. **Diagnóstico del servo inmóvil.** Arduino confirmaba órdenes y parpadeaban
-   sus luces, pero no había movimiento. Se volvió a cargar el programa autónomo
-   que antes funcionaba y tampoco movió el motor. El usuario reconectó el cable
-   que va al servomotor y confirmó que volvió a funcionar. Las respuestas `OK`
-   y las luces, por sí solas, no demostraban movimiento físico. También hubo
-   fallos de apertura de COM3 que se trataron como problemas de conexión USB.
-4. **Restauración del firmware para Python.** Terminada la prueba autónoma, se
-   volvió a cargar y verificar el firmware USB. El servo quedó disponible para
-   recibir órdenes de Python, sin repetir movimientos por su cuenta al iniciar.
-5. **Centralización de los periféricos.** Se creó `perip/` como acceso común y
-   se añadió la cámara USB. Windows detectó `HP HD Camera`, `Camo` y
-   `USB 2.0 CAMERA`; se seleccionó esta última por nombre para evitar depender
-   de un índice fijo.
-6. **Incorporación del repositorio de IA.** Se clonó
-   [PLINIORZAVALA/emotion-detector](https://github.com/PLINIORZAVALA/emotion-detector)
-   dentro de la raíz, usando `dev`, a partir del commit `1c53018`. Se reutilizaron
-   sus modelos existentes; no se entrenó un modelo nuevo. Las adaptaciones se
-   realizaron localmente sobre esa rama.
-7. **Adaptación a Windows y WSL.** El modelo serializado usa Keras 2. Se preparó
-   un entorno compatible con Python 3.12, TensorFlow 2.16.2 y `tf-keras` 2.16.0.
-   La carga de bibliotecas desde la carpeta compartida de WSL resultó lenta, por
-   lo que el entorno de IA se instaló en el disco local de Windows. HDF5 también
-   falló al bloquear el archivo de pesos en la carpeta compartida: ahora se
-   carga una copia temporal local, sin modificar los pesos originales.
-8. **Conexión entre rostro y servo.** Se añadió la selección del rostro de mayor
-   tamaño, el cálculo del ángulo horizontal y el envío de órdenes a COM3. La
-   prueba integrada detectó un rostro, recibió confirmaciones para 45° y 50° y
-   recibió `OK STOP` al perder la detección.
+En la raíz, `start.sh` coordina el arranque, `.env.example` documenta las
+variables opcionales y `CONTEXTO_PROYECTO.json` guarda la memoria de continuidad
+entre sesiones de trabajo.
 
 ## Cómo funciona actualmente
 
@@ -154,23 +147,39 @@ flowchart LR
     A[Terminal de VS Code / WSL] --> B[Python de IA en Windows]
     C[Cámara USB] --> B
     B --> D[Detector de rostros]
-    D --> E[Rostro de mayor tamaño]
+    B --> P[Detector de personas]
+    D --> E[Objetivo: rostro mayor, si no persona mayor]
+    P --> E
     E --> F[Posición horizontal]
     F --> G[Control gradual del ángulo]
     G --> H[COM3 / Arduino Uno]
     H --> I[Señal D2 / servo]
+    E --> L[Orden LIGHT PERSON cada 0.5 s]
+    L --> H
+    H --> M[Relé D3 / luz]
+    N[Sensor de sonido D4] --> H
     E --> J[Modelo de expresión facial]
     J --> K[Etiqueta estimada en la ventana]
 ```
 
-La posición horizontal se transforma en un objetivo dentro del rango probado:
-izquierda → 0°, centro → 45° y derecha → 90°. El controlador requiere tres
-detecciones consecutivas, limita los cambios a 5° con al menos 150 ms entre
-órdenes y evita ajustes menores de 3° mientras el servo está activo. Si deja de
-detectar rostros durante un segundo, envía `STOP` y libera el servo. El comando
-`--reverse` invierte la dirección.
+**Servo.** La posición horizontal del objetivo se transforma en un ángulo dentro
+del rango probado: izquierda → 0°, centro → 45°, derecha → 90°. El controlador
+requiere tres detecciones consecutivas, limita los cambios a 5° con al menos
+150 ms entre órdenes y evita ajustes menores de 3° mientras está activo. Si deja
+de detectar durante un segundo, envía `STOP` y libera el servo. `--reverse`
+invierte la dirección.
 
-La etiqueta de expresión facial es una estimación del modelo. No mide el estado
+**Objetivo.** Se elige el rostro de mayor área; si no hay rostros, la persona de
+mayor área. No hay reconocimiento de identidad ni seguimiento persistente entre
+fotogramas.
+
+**Luz.** Cada detección renueva el temporizador mediante `LIGHT PERSON` cada
+0.5 s. El Arduino mantiene el relé encendido 30 segundos desde la última señal,
+de forma autónoma. Una palmada enciende; tres palmadas seguidas apagan, salvo
+que la cámara siga viendo a alguien. Detalle completo en
+[LIGHT_CONTROL.md](LIGHT_CONTROL.md).
+
+**Expresión facial.** La etiqueta es una estimación del modelo. No mide el estado
 emocional de la persona y no se utiliza para decidir el movimiento del servo.
 
 ## Configuración y entornos
@@ -178,53 +187,65 @@ emocional de la persona y no se utiliza para decidir el movimiento del servo.
 | Elemento | Configuración utilizada |
 | --- | --- |
 | Placa | Arduino Uno, conectado por USB a Windows |
-| Servo | SG90; señal en D2; montaje documentado con 5V y GND |
+| Servo | SG90; señal en **D2**; 5V y GND según el montaje documentado |
+| Relé de luz | Señal de control en **D3**, activo en HIGH |
+| Sensor de sonido | Salida digital **DO** del módulo en **D4**; `INPUT_PULLUP` |
 | Puerto serie | COM3, 115200 baudios |
-| Cámara externa | `USB 2.0 CAMERA`; índice 2 durante las pruebas |
+| Cámara externa | `USB 2.0 CAMERA`; índice 2 en las pruebas originales |
 | Imagen comprobada | 640 × 480 píxeles |
 | Plataforma | Windows con Ubuntu WSL y Python 3.12 en los entornos configurados |
-| Firmware activo al completar la integración | `arduino/firmware/servo_usb/servo_usb.ino` |
+| Firmware activo | `arduino/firmware/servo_usb/servo_usb.ino` |
+
+La tensión de red **nunca** se conecta a D3, D4 ni a la protoboard del Arduino.
+El montaje del lado de corriente alterna debe estar aislado y encerrado.
 
 | Entorno | Uso |
 | --- | --- |
-| `arduino/.venv/` | Entorno de la primera etapa del controlador del servo; se conserva. |
-| `perip/.venv/` | Entorno de WSL para los comandos de cámara y servo. |
+| `arduino/.venv/` | Entorno de la primera etapa del controlador; conserva pySerial, que el Python de Windows reutiliza. |
+| `perip/.venv/` | Entorno de WSL para los lanzadores; solo necesita biblioteca estándar. |
 | `perip/.venv-win/` | Python de Windows con OpenCV para la cámara básica. |
 | `%LOCALAPPDATA%\camera-ai\venv` | Entorno activo de IA en el disco local de Windows. En este equipo: `C:\Users\User\AppData\Local\camera-ai\venv`. |
-| `perip/.venv-ai/` | Entorno de IA creado durante las primeras pruebas en WSL; permanece en disco, pero el lanzador actual usa el entorno local de Windows. |
+| `perip/.venv-ai/` | Entorno de IA de las primeras pruebas en WSL; permanece en disco, pero ya no se usa. |
 
-Los entornos son generados, no código fuente. La cámara y el servo básicos
-pueden ejecutarse por separado. `tracking.py` abre ambos dispositivos desde un
-solo proceso de Windows; no necesita mantener otras demos abiertas ni utiliza
-un servidor HTTP.
+Dependencias fijadas de IA: TensorFlow 2.16.2, tf-keras 2.16.0, NumPy 1.26.4,
+opencv-python 4.11.0.86, cv2-enumerate-cameras 1.3.3 y pySerial 3.5.
 
-## Preparar o recrear la instalación
+## Cómo se llegó hasta aquí
 
-Esta configuración requiere Windows con Python 3.12, Ubuntu WSL con Python y
-`venv` o `uv`, y el repositorio `emotion-detector` como carpeta hermana de
-`perip`. Para compilar el firmware se utiliza `arduino-cli` de la instalación
-de Arduino IDE, con la plataforma AVR y la biblioteca Servo ya disponibles.
-
-```bash
-cd /home/tucu/yo/camera/perip
-python3 setup.py
-python3 setup_ai.py
-source .venv/bin/activate
-python tracking.py --check-models
-```
-
-Los instaladores descargan dependencias. `ARDUINO_WINDOWS_PYTHON` permite
-seleccionar el Python base de Windows y `CAMERA_AI_PYTHON` permite indicar otro
-ejecutable para IA; desde WSL se usan rutas del tipo `/mnt/c/.../python.exe`.
-
-El firmware no se carga de nuevo en cada ejecución. Si se reemplazó por otro
-sketch, sigue la sección de [carga de firmware](arduino/README.md#cargar-firmware-desde-la-terminal).
-Cargar el sketch autónomo de `servo_60_grados/` sustituye el protocolo USB y
-requiere restaurar `servo_usb` para volver a usar Python.
+1. **Prueba autónoma con Arduino IDE.** Montaje que movía el servo con la
+   biblioteca `Servo` y señal en D2.
+2. **Migración del control a Python.** Firmware `servo_usb` con comandos por
+   puerto serie y `arduino/servo.py` para comprobar, posicionar y ciclar.
+3. **Diagnóstico del servo inmóvil.** Arduino confirmaba órdenes y parpadeaban
+   sus luces, pero no había movimiento; tampoco con el sketch autónomo. El
+   usuario reconectó el cable del servomotor y volvió a funcionar. Las respuestas
+   `OK` y las luces, por sí solas, no demuestran movimiento físico.
+4. **Restauración del firmware para Python** y verificación del protocolo.
+5. **Centralización de los periféricos** en `perip/` y selección de la cámara USB
+   por nombre, para no depender de un índice fijo.
+6. **Incorporación del repositorio de IA.** Clon de
+   [PLINIORZAVALA/emotion-detector](https://github.com/PLINIORZAVALA/emotion-detector)
+   en `dev` desde el commit `1c53018`. Se reutilizaron sus modelos; no se entrenó
+   ninguno nuevo.
+7. **Adaptación a Windows y WSL.** El modelo serializado usa Keras 2; se preparó
+   un entorno con Python 3.12, TensorFlow 2.16.2 y `tf-keras` 2.16.0. Cargar las
+   bibliotecas desde la carpeta compartida de WSL resultó lento, por lo que el
+   entorno de IA se instaló en el disco local de Windows. HDF5 además falló al
+   bloquear los pesos en la carpeta compartida: ahora se carga una copia temporal
+   local, sin modificar los originales.
+8. **Conexión entre rostro y servo.** Selección del rostro mayor, cálculo del
+   ángulo y envío de órdenes a COM3.
+9. **Detección de personas.** Clon de MobileNet-SSD en `human-detector/` y
+   adaptador `perip/human_detector.py`. El servo prioriza el rostro y sigue el
+   cuerpo cuando no hay rostros.
+10. **Control de luz.** Relé en D3 y sensor de sonido en D4, con temporizador
+    autónomo en el Arduino y gesto de palmadas.
+11. **Publicación.** El proyecto se trasladó al repositorio
+    `cokoy-ng/person-tracking-camera-system`.
 
 ## Comandos de uso y diagnóstico
 
-Ejecuta los siguientes comandos desde `perip/`, tras activar `.venv`:
+Desde `perip/`, tras activar `.venv`:
 
 ```bash
 # Cámara sin IA ni servo
@@ -233,7 +254,7 @@ python camera.py
 python camera.py --check
 python camera.py --snapshot captures/foto.jpg
 
-# Servo manual: usar un comando cada vez
+# Servo manual: un comando cada vez
 python servo.py --port COM3 --check
 python servo.py --port COM3 --demo --cycles 3
 python servo.py --port COM3 --angle 90
@@ -246,43 +267,74 @@ python tracking.py --reverse
 python tracking.py --seconds 30
 ```
 
-En la cámara básica, **S** guarda una foto y **Q/Esc** cierra la ventana. Un
-comando manual `--angle` mantiene la orden un segundo y después libera el servo.
-`source .venv/bin/activate` solo activa el entorno: por sí solo no abre la cámara
-ni mueve el motor.
-
-## Qué se comprobó hasta este punto
-
-| Prueba | Resultado observado |
-| --- | --- |
-| Montaje del servo | El usuario confirmó movimiento físico después de reconectar el cable del servomotor. |
-| Control USB | Se cargó y verificó el firmware; Arduino respondió a `PING`, `SET` y `STOP`. |
-| Cámara externa | Se recibieron 30 fotogramas de 640 × 480, se abrió video y se guardó una foto de prueba. |
-| Modelos de IA | Cargaron el detector de rostros y los pesos del clasificador; una inferencia de comprobación produjo siete salidas finitas. |
-| Integración real | Hubo detección de rostro y confirmaciones `OK 45`, `OK 50` y `OK STOP` desde Arduino. |
-| Lógica del servo | Pasaron cinco pruebas automatizadas: detección sostenida, límites y pasos, pérdida/reaparición, inversión y rangos inválidos. |
-
-Para repetir las pruebas de lógica sin cámara ni Arduino:
+Diagnóstico del sensor de sonido y del relé, sin cámara, desde `arduino/`:
 
 ```bash
-cd /home/tucu/yo/camera
-perip/.venv/bin/python -m unittest discover -s perip
+python check_sound.py --port COM3 --seconds 40
 ```
+
+Registra cada cambio de nivel en D4, el contador de ruidos que lleva el propio
+Arduino y los cambios de estado de D3. Aborta ante cualquier respuesta `ERR`.
+
+En la cámara básica, **S** guarda una foto y **Q/Esc** cierra la ventana. Un
+comando manual `--angle` mantiene la orden un segundo y después libera el servo.
+
+## Pruebas sin hardware
+
+```bash
+cd /home/tucu/yo/person-tracking-camera-system
+perip/.venv/bin/python -m unittest discover -s perip -p 'test_*.py'
+g++ -std=c++11 -Wall -Wextra -Werror -I arduino/tests arduino/tests/test_light.cpp -o /tmp/camera_test_light
+/tmp/camera_test_light
+```
+
+`arduino/upload.ps1 -CompileOnly` compila el firmware para Uno sin cargar la
+placa.
 
 ## Alcance actual y trabajo pendiente
 
-La integración actual corresponde a una cámara fija que determina la posición
-del servo. Todavía no implementa el control para mantener un rostro centrado
-cuando la propia cámara está montada sobre ese servo, ni seguimiento vertical.
-Si aparecen varias caras, selecciona la de mayor tamaño; no mantiene una
-identidad entre fotogramas.
+La integración corresponde a una **cámara fija** que determina la posición del
+servo. Todavía no implementa el control para mantener un objetivo centrado
+cuando la propia cámara está montada sobre ese servo, ni seguimiento vertical, ni
+coordinación entre varias cámaras. Si aparecen varios objetivos, elige el de
+mayor tamaño; no mantiene una identidad entre fotogramas.
 
-Las confirmaciones serie demuestran que Arduino procesó la orden, no que midió
-el giro del eje. Queda pendiente comprobar y calibrar físicamente el movimiento
-durante el seguimiento integrado, incluyendo el sentido y el rango según el
-montaje definitivo. Tampoco se ha medido la precisión del clasificador de
-expresiones en las condiciones reales de uso.
+### Incidencias abiertas
 
-Para más detalle, consulta [periféricos e integración](perip/README.md),
-[control y firmware del servo](arduino/README.md) y
-[repositorio de IA](emotion-detector/README.md).
+**1. El sensor de sonido de D4 no entrega señal.** En 45 segundos de palmadas el
+Arduino contó 0 ruidos y D4 permaneció fijo en `HIGH`, que es exactamente lo que
+produce el pull-up interno con el pin al aire. El contador lo lleva el firmware
+en la propia placa, así que no es una pérdida de pulsos por muestreo USB. En una
+sesión anterior el mismo montaje reposaba en `LOW` y sí generó flancos que
+encendieron D3, lo que descarta el firmware y apunta a que el módulo dejó de
+llegar al pin. Revisar en este orden: masa común con el Arduino, alimentación del
+módulo, uso de la salida **DO** y no **AO**, y el potenciómetro de umbral
+observando el LED de salida digital del módulo. Prueba definitiva del pin: tocar
+D4 con un cable puesto a GND debe incrementar el contador de ruidos.
+
+**2. El enlace serie corrompe datos.** De 600 comandos `PING` consecutivos, 3
+recibieron `ERR COMMAND` (0.5 %). Un `PING` no puede fallar por lógica, así que
+hay bytes alterándose en el trayecto. Sospecha principal: a 16 MHz el UART del
+Uno genera unos 117 647 baudios reales frente a los 115 200 nominales, un +2.1 %
+de error, en el límite de la tolerancia de 8N1. Bajar a 57 600 o 38 400 baudios
+en el firmware y en `arduino/servo.py` reduciría el error por debajo del 0.8 %.
+Pendiente de decidir y probar.
+
+**3. La cámara `USB 2.0 CAMERA` no está conectada.** Windows solo enumera
+`HP HD Camera` y `Camo`. Mientras tanto, usar `--index 0` o fijar `CAMERA_NAME`
+en `.env`.
+
+**4. Cuelgue del puente USB.** Una vez la placa dejó de aceptar escrituras
+(`SerialTimeoutException`, sin banner `READY`, `CTS`/`DSR` en bajo) aunque COM3
+seguía enumerado. Se recuperó desconectando y reconectando el cable USB; el
+botón de reset no basta. Vigilar si se repite: podría relacionarse con el
+consumo del relé sobre el 5V del Arduino.
+
+### Verificaciones que faltan
+
+Las confirmaciones serie demuestran que Arduino procesó la orden, no que midió el
+giro del eje. Queda pendiente comprobar y calibrar físicamente el movimiento
+durante el seguimiento, incluyendo sentido y rango según el montaje definitivo.
+Tampoco se ha medido la precisión del clasificador de expresiones ni del detector
+de personas en las condiciones reales de uso, ni se ha probado la instalación
+desde un Windows vacío.

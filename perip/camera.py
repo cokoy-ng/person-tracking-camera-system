@@ -21,7 +21,13 @@ def select_camera(cameras, name, index):
         c for c in cameras if c.name.casefold() == name.casefold()
     ]
     if len(matches) != 1:
-        raise RuntimeError("No hay una cámara única que coincida. Usa --list y elige --name o --index.")
+        requested = f'índice {index}' if index is not None else repr(name)
+        available = ', '.join(f'{c.index}: {c.name}' for c in cameras) or 'ninguna'
+        reason = 'No se detecta la cámara' if not matches else 'Hay varias cámaras que coinciden con'
+        raise RuntimeError(
+            f'{reason} {requested}. Disponibles: {available}. '
+            'Reconecta la cámara USB o elige una disponible con --name o --index. '
+            'Usa --list para consultar las cámaras.')
     return matches[0]
 
 

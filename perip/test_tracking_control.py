@@ -1,5 +1,46 @@
 import unittest
-from tracking_control import FaceServo
+from tracking_control import FaceServo, PresenceLight, select_target
+
+
+class PresenceLightTests(unittest.TestCase):
+    def test_presence_renews_lease_and_absence_does_not_cancel_sound(self):
+        light = PresenceLight()
+        self.assertIsNone(light.update(False, 0))
+        self.assertEqual(light.update(True, .1), 'LIGHT PERSON')
+        self.assertIsNone(light.update(True, .2))
+        self.assertEqual(light.update(True, .7), 'LIGHT PERSON')
+        self.assertEqual(light.update(False, 5), 'LIGHT PERSON')
+        self.assertIsNone(light.update(False, 5.1))
+        self.assertEqual(light.update(True, 6), 'LIGHT PERSON')
+
+    def test_continuous_person_and_full_grace_after_disappearance(self):
+        light = PresenceLight()
+        sent = []
+        for i in range(1201):
+            now = i / 10
+            if light.update(True, now):
+                sent.append(now)
+        self.assertGreater(len(sent), 200)
+        self.assertLessEqual(max(b - a for a, b in zip(sent, sent[1:])), .6)
+        self.assertEqual(light.update(False, 120.1), 'LIGHT PERSON')
+        for now in (121, 140, 150.1, 180):
+            self.assertIsNone(light.update(False, now))
+
+
+class TargetTests(unittest.TestCase):
+    def test_face_has_priority_over_larger_body(self):
+        face = (10, 10, 40, 40)
+        self.assertEqual(select_target([face], [(0, 0, 640, 480)]), (face, 'Rostro'))
+
+    def test_body_moves_servo_without_a_face_then_loss_stops(self):
+        target, kind = select_target([], [(0, 0, 10, 10), (400, 0, 640, 480)])
+        self.assertEqual(kind, 'Persona')
+        c = FaceServo()
+        for t in (0, .2, .4):
+            command = c.update((target[0] + target[2]) / 1280, t)
+        self.assertEqual(command, 'SET 50')
+        self.assertEqual(select_target([], []), (None, 'Sin objetivo'))
+        self.assertEqual(c.update(None, 1.5), 'STOP')
 
 
 class FaceServoTests(unittest.TestCase):

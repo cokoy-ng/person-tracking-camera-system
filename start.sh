@@ -16,12 +16,16 @@ Uso: ./start.sh [--check | --setup-only] [opciones de tracking.py]
 Sin opciones: prepara el entorno e inicia cámara, IA y servo.
 --check       Verifica dependencias y carga modelos, sin abrir dispositivos.
 --setup-only  Prepara y verifica dependencias, sin cargar modelos ni dispositivos.
+--list        Lista las cámaras de Windows, sin cargar IA ni abrir Arduino.
 
 Ejemplos:
   ./start.sh
   ./start.sh --no-servo --seconds 10
   ./start.sh --face-only --reverse
   ./start.sh --port COM4 --name 'USB 2.0 CAMERA'
+  ./start.sh --port COM3 --light --light-seconds 30
+
+--light requiere firmware actualizado y relé D3 configurado (ver LIGHT_CONTROL.md).
 
 Lee .env junto al script si existe (ver .env.example).
 Q/Esc cierra la ventana; Espacio pausa el servo; Ctrl+C detiene la aplicación.
@@ -64,6 +68,8 @@ for argument in "$@"; do
 done
 
 for relative_file in \
+    human-detector/deploy.prototxt human-detector/mobilenet_iter_73000.caffemodel \
+    perip/human_detector.py \
     perip/tracking.py perip/check_requirements.py arduino/servo.py \
     emotion-detector/detector.py emotion-detector/requirements-windows.txt \
     emotion-detector/model/67emotion_human.json emotion-detector/model/67emotion_human.h5 \
@@ -140,7 +146,7 @@ if [[ "$mode" == check ]]; then
     tracking_args+=(--check-models)
     printf '[4/4] Validando modelos sin abrir cámara ni servo…\n'
 else
-    printf '[4/4] Iniciando cámara, detección y control configurado del servo…\n'
+    printf '[4/4] Iniciando cámara, rostros, personas y control configurado del servo…\n'
 fi
 cd -- "$project_dir"
 exec "$perip_dir/.venv/bin/python" "$perip_dir/tracking.py" "${defaults[@]}" "${tracking_args[@]}"

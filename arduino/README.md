@@ -1,13 +1,17 @@
-# Servo SG90 desde Python y VS Code / WSL
+# Servo, relé de luz y sensor de sonido desde Python y VS Code / WSL
 
 El firmware del Arduino Uno recibe órdenes por USB. Python decide cuándo mover
 el servo; no hace falta abrir Arduino IDE. El ángulo solicitado no mide el ángulo
 físico del motor y no elimina su límite mecánico.
 
+La misma placa controla además un relé de luz en D3 y lee un sensor de sonido en
+D4, con un temporizador que corre de forma autónoma en el Arduino. Esa parte se
+documenta en [LIGHT_CONTROL.md](../LIGHT_CONTROL.md).
+
 ## Ejecutar desde Ubuntu WSL
 
 ```bash
-cd /home/tucu/yo/camera/arduino
+cd /home/tucu/yo/person-tracking-camera-system/arduino
 source .venv/bin/activate
 python servo.py --demo
 ```
@@ -29,6 +33,9 @@ la demo antes de ejecutar otro comando o cargar firmware.
 ## Conexión usada en este equipo
 
 - Señal del servo: D2; alimentación del circuito: 5V y GND.
+- Señal de control del módulo relé: D3, activo en HIGH.
+- Salida digital DO del módulo de sonido: D4, leída con `INPUT_PULLUP`.
+- La tensión de red nunca se conecta a D3, D4 ni a la protoboard.
 - Arduino conectado por USB a Windows, detectado como COM3.
 - Programa principal y entorno virtual en WSL Ubuntu, Python 3.12.
 - Un proceso auxiliar del Python de Windows abre COM3 y comunica las órdenes y
@@ -39,7 +46,20 @@ la demo antes de ejecutar otro comando o cargar firmware.
 - Si se configura acceso USB nativo a WSL más adelante, usa
   `--port /dev/ttyACM0` para utilizar pyserial directamente sin puente.
 
-No se integra aún la webcam: este proyecto prueba el control USB del Arduino.
+Esta carpeta cubre el control USB del Arduino. La integración con la cámara y
+los modelos de visión está en [`perip/`](../perip/README.md) y se arranca con
+`start.sh` desde la raíz del proyecto.
+
+## Diagnóstico del sensor de sonido
+
+```bash
+cd /home/tucu/yo/person-tracking-camera-system/arduino
+/mnt/c/Users/User/AppData/Local/Programs/Python/Python312/python.exe check_sound.py --port COM3 --seconds 40
+```
+
+Muestra el nivel de D4, el contador de ruidos que lleva el propio Arduino y el
+estado lógico de D3, sin abrir la cámara. La tabla de interpretación está en
+[LIGHT_CONTROL.md](../LIGHT_CONTROL.md#diagnóstico-del-sensor-de-sonido).
 
 ## Cargar firmware desde la terminal
 
@@ -47,7 +67,7 @@ El firmware ya se cargó en la prueba inicial. Solo hay que repetir este paso si
 se modifica el archivo .ino o se carga otro programa en la placa.
 
 ```bash
-cd /home/tucu/yo/camera/arduino
+cd /home/tucu/yo/person-tracking-camera-system/arduino
 /mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$(wslpath -w "$PWD/upload.ps1")" -Port COM3
 ```
 
@@ -77,3 +97,12 @@ En VS Code selecciona `arduino/.venv/bin/python` como intérprete en la ventana 
 SET acepta enteros de 0 a 180. Las órdenes inválidas reciben ERR y no cambian la
 posición. OK confirma que el Arduino procesó la orden, no que se haya medido el
 movimiento del eje. Al reiniciarse la placa, espera órdenes sin activar el servo.
+`STOP` libera el servo; no apaga la luz.
+
+Las órdenes `LIGHT ...` y `SOUND ...` del control de luz se documentan en
+[LIGHT_CONTROL.md](../LIGHT_CONTROL.md).
+
+Medición del 14 de septiembre de 2026: de 600 `PING` consecutivos, 3 recibieron
+`ERR COMMAND`. Un `PING` no puede fallar por lógica, así que hay corrupción en el
+enlace serie. Está registrado como incidencia abierta en el
+[README principal](../README.md#incidencias-abiertas).

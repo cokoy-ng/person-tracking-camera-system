@@ -38,10 +38,22 @@ class USB:
         self.serial.write((command + "\n").encode("ascii"))
         deadline = time.monotonic() + 3
         expected = {"PING": "PONG SERVO_USB_1", "STOP": "OK STOP"}.get(command)
+        if command == "LIGHT PING":
+            expected = "OK LIGHT_1"
+        elif command == "LIGHT PERSON" or command.startswith("LIGHT HOLD ") or command in ("SOUND OFF", "SOUND LOW", "SOUND HIGH", "SOUND CHANGE"):
+            expected = "OK " + command
         if command.startswith("SET "):
             expected = "OK " + command[4:]
         while time.monotonic() < deadline:
             response = self.serial.readline().decode("ascii", errors="replace").strip()
+            if command == 'SOUND STATS':
+                parts = response.split()
+                if len(parts) == 4 and parts[:2] == ['OK', 'SOUND'] and all(p.isdigit() for p in parts[2:]):
+                    return response
+            if command == 'SOUND READ' and response in ('OK SOUND LOW', 'OK SOUND HIGH'):
+                return response
+            if command == 'LIGHT STATE' and response in ('OK LIGHT ON', 'OK LIGHT OFF'):
+                return response
             if response == expected:
                 return response
             if response.startswith("ERR"):
