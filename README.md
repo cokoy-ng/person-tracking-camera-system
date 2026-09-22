@@ -35,6 +35,13 @@ Estas comprobaciones son de software y de protocolo. Las respuestas `OK` del
 Arduino demuestran que procesó la orden, no que el eje girara ni que el foco
 encendiera físicamente.
 
+### Adición del 22 de septiembre de 2026: sensor DHT11 en D5
+
+Se conectó un sensor DHT11 (temperatura y humedad, tres pines) al firmware
+`servo_usb`. D0 y D2 se descartaron por chocar con el puerto serie y el servo;
+quedó en **D5**. Verificado con `arduino/check_temp.py`: 7 de 7 lecturas
+correctas, 24 °C y 46-47 % de humedad. Comando serie nuevo: `TEMP READ`.
+
 ## Ejecutar la integración
 
 El arranque recomendado prepara las variables, verifica las dependencias e
@@ -127,8 +134,9 @@ Dentro de `arduino/`:
 | --- | --- |
 | `servo.py` | Controlador serie: clase `USB`, puente a Windows y CLI `--check`, `--angle`, `--demo`. |
 | `check_sound.py` | Diagnóstico acotado de D4 y del estado lógico de D3, sin cámara. |
-| `firmware/servo_usb/servo_usb.ino` | Firmware activo: protocolo serie, servo D2, relé D3 y sensor D4. |
+| `firmware/servo_usb/servo_usb.ino` | Firmware activo: protocolo serie, servo D2, relé D3, sensor de sonido D4 y sensor DHT11 D5. |
 | `firmware/servo_usb/light_control.h` | Lógica de temporizador de luz y del gesto de palmadas, aislada para poder probarla. |
+| `check_temp.py` | Diagnóstico del sensor DHT11 (temperatura y humedad) en D5, sin cámara. |
 | `tests/test_light.cpp` | Pruebas de esa lógica compiladas en el PC, sin placa. |
 | `upload.ps1` | Compila, carga y verifica el firmware con `arduino-cli` de la instalación Windows de Arduino IDE. |
 
@@ -158,6 +166,7 @@ flowchart LR
     L --> H
     H --> M[Relé D3 / luz]
     N[Sensor de sonido D4] --> H
+    O[Sensor DHT11 D5] -. TEMP READ bajo demanda .-> H
     E --> J[Modelo de expresión facial]
     J --> K[Etiqueta estimada en la ventana]
 ```
@@ -190,6 +199,7 @@ emocional de la persona y no se utiliza para decidir el movimiento del servo.
 | Servo | SG90; señal en **D2**; 5V y GND según el montaje documentado |
 | Relé de luz | Señal de control en **D3**, activo en HIGH |
 | Sensor de sonido | Salida digital **DO** del módulo en **D4**; `INPUT_PULLUP` |
+| Sensor de temperatura y humedad | DHT11 de tres pines, dato en **D5**; protocolo de un solo cable sin librerías externas |
 | Puerto serie | COM3, 115200 baudios |
 | Cámara externa | `USB 2.0 CAMERA`; índice 2 en las pruebas originales |
 | Imagen comprobada | 640 × 480 píxeles |
@@ -242,6 +252,11 @@ opencv-python 4.11.0.86, cv2-enumerate-cameras 1.3.3 y pySerial 3.5.
     autónomo en el Arduino y gesto de palmadas.
 11. **Publicación.** El proyecto se trasladó al repositorio
     `cokoy-ng/person-tracking-camera-system`.
+12. **Sensor de temperatura y humedad.** DHT11 de tres pines, con lectura del
+    protocolo de un solo cable escrita a mano (sin librerías externas). D0 y D2
+    quedaron descartados por chocar con el puerto serie y con el servo; el dato
+    quedó en **D5**. Comando serie `TEMP READ` y diagnóstico
+    `arduino/check_temp.py`.
 
 ## Comandos de uso y diagnóstico
 
@@ -275,6 +290,15 @@ python check_sound.py --port COM3 --seconds 40
 
 Registra cada cambio de nivel en D4, el contador de ruidos que lleva el propio
 Arduino y los cambios de estado de D3. Aborta ante cualquier respuesta `ERR`.
+
+Diagnóstico del sensor DHT11 (temperatura y humedad), sin cámara, desde `arduino/`:
+
+```bash
+python check_temp.py --port COM3 --seconds 20
+```
+
+Pide una lectura cada 2 segundos (el DHT11 no responde bien a más frecuencia) y
+reporta `ERR TEMP` si el sensor no contesta o el checksum no coincide.
 
 En la cámara básica, **S** guarda una foto y **Q/Esc** cierra la ventana. Un
 comando manual `--angle` mantiene la orden un segundo y después libera el servo.

@@ -7,6 +7,7 @@ Servo servo;
 const int PIN_SERVO = 2;
 const int PIN_RELAY = 3;
 const int PIN_SOUND = 4;
+const int PIN_DHT = 5;
 // El usuario comprobó que la entrada del módulo enciende con positivo.
 const int RELAY_ACTIVE_LEVEL = HIGH;
 LightControl light;
@@ -29,6 +30,41 @@ void updateLight() {
   light.update(millis());
   digitalWrite(PIN_RELAY, light.on ? RELAY_ACTIVE_LEVEL : !RELAY_ACTIVE_LEVEL);
 }
+// DHT11 en A5: un solo cable de datos, sin librerías externas.
+bool readDHT11(int &humidity, int &temperature) {
+  byte data[5] = {0, 0, 0, 0, 0};
+  pinMode(PIN_DHT, OUTPUT);
+  digitalWrite(PIN_DHT, LOW);
+  delay(18);
+  digitalWrite(PIN_DHT, HIGH);
+  delayMicroseconds(30);
+  pinMode(PIN_DHT, INPUT_PULLUP);
+
+  unsigned long timeout = micros();
+  while (digitalRead(PIN_DHT) == HIGH) if (micros() - timeout > 200) return false;
+  timeout = micros();
+  while (digitalRead(PIN_DHT) == LOW) if (micros() - timeout > 200) return false;
+  timeout = micros();
+  while (digitalRead(PIN_DHT) == HIGH) if (micros() - timeout > 200) return false;
+
+  for (int i = 0; i < 40; i++) {
+    timeout = micros();
+    while (digitalRead(PIN_DHT) == LOW) if (micros() - timeout > 200) return false;
+    unsigned long start = micros();
+    timeout = micros();
+    while (digitalRead(PIN_DHT) == HIGH) if (micros() - timeout > 200) return false;
+    unsigned long width = micros() - start;
+    data[i / 8] <<= 1;
+    if (width > 40) data[i / 8] |= 1;
+  }
+
+  byte checksum = data[0] + data[1] + data[2] + data[3];
+  if (checksum != data[4]) return false;
+  humidity = data[0];
+  temperature = data[2];
+  return true;
+}
+
 char line[32];
 byte length = 0;
 bool overflow = false;
@@ -40,6 +76,16 @@ void command() {
     Serial.println("OK LIGHT_1");
   } else if (strcmp(line, "SOUND READ") == 0) {
     Serial.println(digitalRead(PIN_SOUND) == HIGH ? "OK SOUND HIGH" : "OK SOUND LOW");
+  } else if (strcmp(line, "TEMP READ") == 0) {
+    int humidity, temperature;
+    if (readDHT11(humidity, temperature)) {
+      Serial.print("OK TEMP ");
+      Serial.print(temperature);
+      Serial.print(" ");
+      Serial.println(humidity);
+    } else {
+      Serial.println("ERR TEMP");
+    }
   } else if (strcmp(line, "SOUND STATS") == 0) {
     Serial.print("OK SOUND ");
     Serial.print(soundGesture.events);

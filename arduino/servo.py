@@ -52,6 +52,12 @@ class USB:
                     return response
             if command == 'SOUND READ' and response in ('OK SOUND LOW', 'OK SOUND HIGH'):
                 return response
+            if command == 'TEMP READ':
+                if response == 'ERR TEMP':
+                    return response
+                parts = response.split()
+                if len(parts) == 4 and parts[:2] == ['OK', 'TEMP'] and all(p.lstrip('-').isdigit() for p in parts[2:]):
+                    return response
             if command == 'LIGHT STATE' and response in ('OK LIGHT ON', 'OK LIGHT OFF'):
                 return response
             if response == expected:
