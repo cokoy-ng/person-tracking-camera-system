@@ -1,9 +1,9 @@
 {
   "version": 2,
-  "actualizado": "2026-09-22T20:15:00-05:00",
+  "actualizado": "2026-09-22T21:30:00-05:00",
   "idioma": "es",
   "proposito": "Memoria de continuidad para retomar rápidamente este proyecto. Leer primero este archivo y después consultar solo los archivos relevantes para la siguiente tarea.",
-  "resumen": "Integración local de cámara USB, detección de rostros con expresión facial, detección de personas, control de un servo SG90 y control de una luz por relé, todo sobre Arduino Uno. El código está en Ubuntu WSL y el acceso USB y la inferencia se ejecutan en Windows. El lanzador start.sh está probado de extremo a extremo. El proyecto ya está en el repositorio cokoy-ng/person-tracking-camera-system. Quedan cuatro incidencias de hardware abiertas, la principal es que el sensor de sonido de D4 no entrega señal.",
+  "resumen": "Integración local de cámara USB, detección de rostros con expresión facial, detección de personas, control de un servo SG90, control de una luz por relé y un sensor DHT11 (temperatura/humedad), todo sobre un Arduino Uno. El código está en Ubuntu WSL; el acceso USB y la inferencia se ejecutan en Windows. Además hay un dashboard web (backend FastAPI + frontend React) que muestra la temperatura y humedad en vivo, reutilizando el mismo controlador serie que el resto del proyecto. El 2026-09-22 se reorganizó todo por áreas (iot/, ai/comp_vision/, docs/, backend/, frontend/) reemplazando las carpetas arduino/ y perip/ de nivel superior; ya está commiteado (f9245ed). El lanzador start.sh y el dashboard están probados de extremo a extremo con hardware real. Quedan cinco incidencias abiertas, la principal es que el sensor de sonido de D4 no entrega señal.",
   "rutas": {
     "proyecto": "/home/tucu/yo/person-tracking-camera-system",
     "readme_principal": "/home/tucu/yo/person-tracking-camera-system/README.md",
@@ -15,10 +15,10 @@
     "python_base_windows": "/mnt/c/Users/User/AppData/Local/Programs/Python/Python312/python.exe",
     "python_ia_windows": "/mnt/c/Users/User/AppData/Local/camera-ai/venv/Scripts/python.exe",
     "nota_rutas": "La documentación ya no apunta a /home/tucu/yo/camera. start.sh calcula su raíz dinámicamente.",
-    "reorganizacion_2026_09_22": "arduino/ y perip/ ya no existen como carpetas de nivel superior. Todo el hardware vive en iot/ (firmware/, firmware-tests/, host/, diagnostics/, tracking/). Los modelos de visión se movieron a ai/comp_vision/ (emotion-detector/, human-detector/). El diagrama y BOM están en docs/ (antes digram/). Se agregaron backend/ (FastAPI) y frontend/ (React) para un dashboard de temperatura/humedad en vivo."
+    "reorganizacion_2026_09_22": "arduino/ y perip/ ya no existen como carpetas de nivel superior. Todo el hardware vive en iot/ (firmware/, firmware-tests/, host/, diagnostics/, tracking/). Los modelos de visión se movieron a ai/comp_vision/ (emotion-detector/, human-detector/). El diagrama y BOM están en docs/ (antes digram/). Se agregaron backend/ (FastAPI) y frontend/ (React) para un dashboard de temperatura/humedad en vivo. Ya commiteado en f9245ed; no repetir el movimiento de archivos."
   },
   "objetivo_del_usuario": {
-    "actual": "Dejar funcionando el control de luz por sonido y documentar el estado real del proyecto.",
+    "actual": "El DHT11, el dashboard web y la reorganización por áreas ya están hechos y verificados. Lo que queda abierto es resolver la incidencia sonido-d4-sin-senal (prioridad alta) y decidir si se baja la velocidad del puerto serie para eliminar los ERR COMMAND esporádicos.",
     "producto_futuro": "Varias cámaras conectadas por cable, cada una movida por servomotores, detectarán personas y orientarán la cámara para mantener el seguimiento visual.",
     "nombre": "person-tracking-camera-system",
     "descripcion": "Sistema de cámaras conectadas por cable que utiliza visión artificial y servomotores para detectar y seguir personas automáticamente.",
@@ -73,6 +73,7 @@
     "senal_servo": "D2",
     "rele_luz": "D3, activo en HIGH, señal de control de un módulo relé",
     "sensor_sonido": "D4, salida digital DO del módulo, leído con INPUT_PULLUP",
+    "sensor_temperatura_humedad": "DHT11 de tres pines en D5, protocolo de un solo cable escrito a mano (iot/firmware/servo_usb/dht11_sensor.h). D0 (RX) y D2 (servo) se descartaron por chocar con pines ya usados.",
     "alimentacion_documentada": "5V y GND según el montaje existente",
     "puerto": "Variable entre sesiones (fue COM3, luego COM6 el 2026-09-22). Verificar siempre antes de usar.",
     "baudios": 115200,
@@ -92,11 +93,25 @@
     "expresiones": "Etiqueta estimada entre angry, disgust, fear, happy, neutral, sad y surprise. No representa una medición del estado emocional y no gobierna el movimiento.",
     "ejecucion": "Aplicación de escritorio en primer plano; no es un servicio systemd, HTTP ni un arranque automático al encender Windows."
   },
+  "dashboard_temperatura": {
+    "que_es": "Dashboard web de temperatura/humedad en vivo, separado de tracking.py. No se abren ambos a la vez contra el mismo Arduino: el que tenga el puerto COM abierto bloquea al otro.",
+    "backend": "backend/main.py, FastAPI corriendo con el Python de Windows (necesita abrir el puerto COM). Importa USB de iot/host/serial_bridge.py. Arranque: backend/run.ps1 -Port <COMx>, invocado desde WSL vía el puente a PowerShell.",
+    "sondeo": "Cada 2.5 s (POLL_SECONDS en backend/main.py) en un hilo aparte (run_in_executor), porque pyserial bloquea y no se puede llamar directo desde el loop de asyncio.",
+    "endpoints": {
+      "GET /api/temperature": "Última lectura: {ok, temperature, humidity, timestamp} o {ok:false} si el sensor no respondió.",
+      "GET /api/temperature/history": "Últimas 120 lecturas (HISTORY_SIZE, ~5 minutos) en memoria, se pierden al reiniciar el backend.",
+      "WS /ws/temperature": "Push de cada lectura nueva a todos los clientes conectados."
+    },
+    "puertos_red": "Backend en localhost:8000 (Windows), frontend en localhost:5173 (WSL, con npm run dev -- --host). Ambos accesibles desde un navegador de Windows por localhost normal.",
+    "frontend": "frontend/ (React + Vite). App.jsx se conecta por WebSocket con reintento automático cada 2 s si falla; hace fetch inicial de /api/temperature/history para precargar el sparkline SVG (sin librerías de gráficos externas).",
+    "limitacion_red_wsl": "curl desde dentro de WSL hacia localhost:8000 (servicio de Windows) puede dar 'Connection refused' por cómo WSL2 reenvía puertos en esa dirección; hay que usar la IP del gateway (ip route | awk '/^default/ {print $3}') para probarlo desde una terminal de WSL. Un navegador nativo de Windows no tiene ese problema.",
+    "verificado": "2026-09-22: REST y WebSocket devolviendo datos reales del DHT11 (23°C, 47-48% humedad) en varias rondas de prueba, incluyendo después de la reorganización de carpetas. Build de producción del frontend (npm run build) compila limpio."
+  },
   "entornos": {
-    "arduino/.venv": "Entorno Linux del controlador. Contiene pySerial, que el Python de Windows reutiliza por ser Python puro.",
-    "perip/.venv": "Entorno Linux para los lanzadores. La ejecución integrada solo necesita biblioteca estándar aquí.",
-    "perip/.venv-win": "Entorno Windows para cámara básica con OpenCV.",
-    "perip/.venv-ai": "Entorno de IA inicial en la carpeta compartida WSL. Está en disco, pero ya no lo utiliza el lanzador actual.",
+    "iot/.venv": "Entorno Linux del controlador (antes arduino/.venv). Contiene pySerial, que el Python de Windows reutiliza por ser Python puro.",
+    "iot/tracking/.venv": "Entorno Linux para los lanzadores (antes perip/.venv). La ejecución integrada solo necesita biblioteca estándar aquí.",
+    "iot/tracking/.venv-win": "Entorno Windows para cámara básica con OpenCV (antes perip/.venv-win).",
+    "iot/tracking/.venv-ai": "Entorno de IA inicial en la carpeta compartida WSL (antes perip/.venv-ai). Está en disco, pero ya no lo utiliza el lanzador actual.",
     "activo_ia": "C:\\Users\\User\\AppData\\Local\\camera-ai\\venv",
     "dependencias_ia": {
       "tensorflow": "2.16.2",
@@ -105,7 +120,9 @@
       "opencv-python": "4.11.0.86",
       "cv2-enumerate-cameras": "1.3.3",
       "pyserial": "3.5"
-    }
+    },
+    "backend": "Sin venv propio: usa el Python base de Windows (C:\\Users\\User\\AppData\\Local\\Programs\\Python\\Python312\\python.exe) con fastapi 0.141.1 y uvicorn 0.52.4 ya instalados globalmente ahí. Importa pyserial vía iot/host/serial_bridge.py, que agrega iot/.venv al sys.path.",
+    "frontend": "Node 22.22.1 / npm 9.2.0 en WSL. Dependencias en frontend/node_modules (React + Vite), instaladas con npm install."
   },
   "historia_y_problemas_resueltos": [
     "El servo funcionaba con el sketch de Arduino IDE en D2. Python mantuvo ese pin.",
@@ -138,6 +155,15 @@
     "pruebas_unitarias": "Las pruebas de FaceServo pasaron en sesiones anteriores; no se relanzaron el 2026-09-14.",
     "limite_prueba_instalador": "La prueba del lanzador usó dependencias ya instaladas; no se probó desde un Windows vacío.",
     "limite_fisico": "No se midió el giro del eje ni el encendido real del foco; solo el estado lógico informado por el Arduino."
+  },
+  "verificacion_realizada_2026_09_22": {
+    "dht11": "7/7 lecturas correctas en D5 tras mover el cable de D0 (chocaba con RX) y D2 (chocaba con servo): 24°C, 46-47% humedad.",
+    "dashboard": "REST y WebSocket devolviendo datos reales del Arduino, confirmado en varias rondas separadas por minutos, incluido después de mover archivos a iot/host/.",
+    "firmware_dividido": "Recompilado con arduino-cli tras separar servo_usb.ino en pins.h/servo_control.h/relay_light.h/sound_sensor.h/dht11_sensor.h: mismo tamaño (6414 bytes, 19%). Subido a la placa y vuelto a probar con check_temp.py.",
+    "pruebas_firmware_arregladas": "iot/firmware-tests/test_light.cpp no compilaba desde que se agregó el DHT11 (usaba micros/delay/delayMicroseconds sin simular). Se agregaron esos mocks; ahora compila y pasa.",
+    "pruebas_python": "11 pruebas unitarias (test_tracking_control.py, test_human_detector.py) pasan desde iot/tracking/ tras el movimiento de perip/ a iot/tracking/ (2 se saltan por falta de cv2 en el venv mínimo, es esperado).",
+    "frontend_build": "npm run build compila sin errores ni warnings (17 módulos, dist/ generado).",
+    "reorganizacion_commiteada": "git commit f9245ed 'update estructuracion de carpetas'. Se corrigió antes un problema de submódulos: ai/comp_vision/emotion-detector y ai/comp_vision/human-detector tenían su propio .git interno y git los iba a guardar como gitlink (puntero) en vez de archivos reales; se borró ese .git interno y se volvieron a agregar como archivos normales antes de commitear."
   },
   "incidencias_abiertas": [
     {
@@ -212,7 +238,7 @@
     "rama": "main",
     "autenticacion": "El usuario completó gh auth login por navegador. No se almacenan códigos, tokens ni claves en este contexto.",
     "otra_cuenta": "El usuario quiere conservar dos cuentas en este WSL. No borrar credenciales ni cerrar la otra sesión innecesariamente. La identidad del autor de commits es distinta de la cuenta de autenticación.",
-    "estado": "El proyecto ya está copiado en el repositorio. Últimos commits: b0b56a7 Add context, d6aecd6 Add camera, AI tectection and aduino servo control, 0cec94b this tests. Hay cambios en el área de preparación pendientes de commit.",
+    "estado": "Árbol de trabajo limpio, sin cambios pendientes al cerrar la sesión del 2026-09-22. Últimos commits: f9245ed 'update estructuracion de carpetas' (la reorganización iot/ai/docs/backend/frontend), a4e3293 'S verifico funcionalidad de conxion de 5to pin analogico de sentor de temperatura y humedad' (DHT11), b26e591 'udate document', b0b56a7 'Add context'.",
     "repositorio_ia": {
       "url": "https://github.com/PLINIORZAVALA/emotion-detector.git",
       "rama": "dev",
@@ -227,13 +253,13 @@
     "precaucion": "No usar rsync --delete, git reset destructivo ni push --force."
   },
   "siguiente_sesion": [
-    "Leer este JSON, iot/README.md y el apartado 'Incidencias abiertas' del README principal.",
-    "Retomar por la incidencia sonido-d4-sin-senal: pedir al usuario la prueba de tocar D4 contra GND mientras corre iot/diagnostics/check_sound.py. Ese resultado decide si el problema es el módulo o la placa.",
+    "Leer este JSON completo primero (incluye dashboard_temperatura y verificacion_realizada_2026_09_22), luego iot/README.md, luego el apartado 'Incidencias abiertas' del README principal. No hace falta releer el código para entender la arquitectura: está toda descrita aquí.",
+    "Retomar por la incidencia sonido-d4-sin-senal (única de prioridad alta): pedir al usuario la prueba de tocar D4 contra GND mientras corre iot/diagnostics/check_sound.py. Ese resultado decide si el problema es el módulo o la placa.",
     "Si el usuario lo autoriza, bajar los baudios a 57600 en servo_usb.ino y iot/host/serial_bridge.py, recargar con upload.ps1 y repetir la prueba de 600 PING para confirmar que desaparecen los ERR COMMAND.",
     "Comprobar si la cámara USB 2.0 CAMERA volvió a conectarse antes de usar start.sh sin argumentos.",
-    "Antes de cualquier prueba serie, verificar el puerto COM actual (Get-CimInstance Win32_SerialPort) y que no haya otro proceso hablando con el Arduino — Arduino IDE abierto o un python.exe main.py ajeno al proyecto ya bloquearon el puerto antes.",
-    "Hacer commit de los cambios pendientes cuando el usuario lo pida (a la fecha de este JSON hay una reorganización completa de carpetas sin commitear).",
-    "El siguiente desarrollo funcional sería el seguimiento con cámara montada en el servo y, posteriormente, varias cámaras."
+    "Antes de cualquier prueba serie, verificar el puerto COM actual (Get-CimInstance Win32_SerialPort) y que no haya otro proceso hablando con el Arduino — Arduino IDE abierto o un python.exe main.py ajeno al proyecto ya bloquearon el puerto antes. Tampoco correr tracking.py y el backend del dashboard a la vez: compiten por el mismo puerto COM.",
+    "El repo queda limpio (sin cambios sin commitear) al cerrar esta sesión; verificar con git status antes de asumir que sigue así.",
+    "El siguiente desarrollo funcional sería el seguimiento con cámara montada en el servo y, posteriormente, varias cámaras — ver objetivo_del_usuario.producto_futuro."
   ],
   "preferencias_de_trabajo": [
     "Comunicar en español, con comandos claros y pasos concretos.",
