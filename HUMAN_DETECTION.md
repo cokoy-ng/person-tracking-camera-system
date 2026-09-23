@@ -16,19 +16,20 @@ bash start.sh --no-humans --port COM3   # Comportamiento anterior: rostros y exp
 bash start.sh --face-only --port COM3   # Solo rostros, sin expresiones ni personas
 ```
 
-El repositorio original se clonó en `human-detector/`:
+El repositorio original se clonó en `ai/comp_vision/human-detector/`:
 https://github.com/chuanqi305/MobileNet-SSD
 
 Revisión: `bb17b6c3eef36d80be441ae8e5339be66e8e3b7a` (licencia MIT, incluida en el clon).
 Se usan `deploy.prototxt` y `mobilenet_iter_73000.caffemodel` mediante OpenCV DNN.
-El adaptador está en `perip/human_detector.py`; filtra la clase VOC 15 (persona)
-con confianza mínima 0.5. No requiere instalar Caffe ni nuevas dependencias.
-Es un modelo ligero antiguo; puede fallar con oclusiones, poca luz o personas pequeñas.
-Ejecutar ambos detectores puede reducir los fotogramas por segundo.
+El adaptador está en `iot/tracking/human_detector.py`; filtra la clase VOC 15
+(persona) con confianza mínima 0.5. No requiere instalar Caffe ni nuevas
+dependencias. Es un modelo ligero antiguo; puede fallar con oclusiones, poca
+luz o personas pequeñas. Ejecutar ambos detectores puede reducir los
+fotogramas por segundo.
 
 Para recuperar el clon en otra instalación:
 
 ```bash
-git clone https://github.com/chuanqi305/MobileNet-SSD.git human-detector
-git -C human-detector checkout bb17b6c3eef36d80be441ae8e5339be66e8e3b7a
+git clone https://github.com/chuanqi305/MobileNet-SSD.git ai/comp_vision/human-detector
+git -C ai/comp_vision/human-detector checkout bb17b6c3eef36d80be441ae8e5339be66e8e3b7a
 ```

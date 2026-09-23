@@ -91,18 +91,20 @@ temporizador vence localmente. La configuración no se guarda en EEPROM.
 Pruebas sin dispositivos:
 
 ```bash
-python3 -m unittest discover -s perip -p 'test_*.py'
-g++ -std=c++11 -Wall -Wextra -Werror -I arduino/tests arduino/tests/test_light.cpp -o /tmp/camera_test_light
+python3 -m unittest discover -s iot/tracking -p 'test_*.py'
+g++ -std=c++11 -Wall -Wextra -Werror -I iot/firmware-tests iot/firmware-tests/test_light.cpp -o /tmp/camera_test_light
 /tmp/camera_test_light
 ```
 
-`arduino/upload.ps1 -CompileOnly` compila para Uno sin cargar la placa. El script
-de carga incluye ahora también `light_control.h`.
+`iot/host/upload.ps1 -CompileOnly` compila para Uno sin cargar la placa. El
+script de carga copia los módulos del firmware (`pins.h`, `servo_control.h`,
+`relay_light.h`, `sound_sensor.h`, `dht11_sensor.h`), cada uno con la lógica de
+un componente.
 
 ## Diagnóstico del sensor de sonido
 
 ```bash
-cd arduino
+cd iot/diagnostics
 /mnt/c/Users/User/AppData/Local/Programs/Python/Python312/python.exe check_sound.py --port COM3 --seconds 40
 ```
 

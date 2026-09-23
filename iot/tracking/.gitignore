@@ -1,0 +1,6 @@
+.venv/
+.venv-win/
+.venv-ai/
+__pycache__/
+captures/
+.tracking.lock

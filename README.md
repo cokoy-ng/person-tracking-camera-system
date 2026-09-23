@@ -12,9 +12,8 @@ No hace falta abrir Arduino IDE para el uso diario.
 
 - [Rostros, personas y servo](HUMAN_DETECTION.md)
 - [Luz por presencia y sonido](LIGHT_CONTROL.md)
-- [Periféricos e integración](perip/README.md)
-- [Control y firmware del servo](arduino/README.md)
-- [Repositorio de IA](emotion-detector/README.md)
+- [Arduino, sensores, cámara y visión](iot/README.md)
+- [Monitor en vivo (backend/frontend)](#monitor-en-vivo-de-temperatura-y-humedad)
 
 ## Estado documentado: 14 de septiembre de 2026
 
@@ -39,8 +38,18 @@ encendiera físicamente.
 
 Se conectó un sensor DHT11 (temperatura y humedad, tres pines) al firmware
 `servo_usb`. D0 y D2 se descartaron por chocar con el puerto serie y el servo;
-quedó en **D5**. Verificado con `arduino/check_temp.py`: 7 de 7 lecturas
+quedó en **D5**. Verificado con `iot/diagnostics/check_temp.py`: 7 de 7 lecturas
 correctas, 24 °C y 46-47 % de humedad. Comando serie nuevo: `TEMP READ`.
+
+### Reorganización del 22 de septiembre de 2026: `iot/`, `ai/`, `backend/`, `frontend/`
+
+El proyecto se separó en áreas independientes. `arduino/` y `perip/` ya no
+existen como carpetas de nivel superior: todo el hardware vive ahora en
+[`iot/`](iot/README.md) (firmware dividido por componente, puente USB,
+diagnósticos y la integración de cámara/IA), los modelos de visión se movieron
+a `ai/comp_vision/`, el diagrama y BOM a `docs/`, y se agregó el dashboard web
+en `backend/` + `frontend/`. Detalle carpeta por carpeta en la tabla de abajo
+y, para `iot/`, en su propio README.
 
 ## Ejecutar la integración
 
@@ -60,7 +69,7 @@ consistencia con `pip check`. Si todo coincide, no instala ni consulta el índic
 de paquetes.
 
 El lanzador detecta las rutas de Python, exporta `ARDUINO_WINDOWS_PYTHON` y
-`CAMERA_AI_PYTHON`, activa `perip/.venv` y pasa la cámara y el puerto al
+`CAMERA_AI_PYTHON`, activa `iot/tracking/.venv` y pasa la cámara y el puerto al
 programa. Si falta el entorno de WSL, crea uno con la biblioteca estándar; la IA
 y pySerial se ejecutan en el entorno de Windows.
 
@@ -101,48 +110,132 @@ indica el objetivo elegido, el ángulo solicitado y el estado lógico de la luz.
 | Cerrar la ventana | Finalizar la sesión |
 | Ctrl+C en la terminal | Solicitar la parada desde WSL |
 
+## Monitor en vivo de temperatura y humedad
+
+Dashboard web con el DHT11 (D5): backend FastAPI en Windows (necesita abrir el
+puerto COM) y frontend React servido desde WSL.
+
+```mermaid
+flowchart LR
+    S[DHT11 en D5] -->|cable, protocolo 1 hilo| A[Arduino: servo_usb.ino]
+    A -->|USB serie 115200 baudios, TEMP READ| H[iot/host/serial_bridge.py]
+    H -->|import directo, mismo proceso| B[backend/main.py en Windows]
+    B -->|sondeo cada 2.5 s| B
+    B -->|GET /api/temperature| F[frontend en localhost:5173]
+    B -->|WebSocket /ws/temperature, push en vivo| F
+    F -->|renderiza| U[Navegador del usuario]
+```
+
+Único tramo por red del dashboard: `frontend → backend` (HTTP/WebSocket en
+`localhost:8000`). Todo lo anterior es cable USB o import directo de Python.
+
+```bash
+# Backend, desde WSL con el puente a PowerShell (sin abrir el IDE):
+cd /home/tucu/yo/person-tracking-camera-system/backend
+/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$(wslpath -w "$PWD/run.ps1")" -Port COM3
+
+# Frontend, en otra terminal:
+cd /home/tucu/yo/person-tracking-camera-system/frontend
+npm install   # solo la primera vez
+npm run dev -- --host
+```
+
+Abrir `http://localhost:5173` en un navegador de Windows. El backend escucha en
+`http://localhost:8000`; `-Port` en `run.ps1` es el puerto COM del Arduino
+(varía entre sesiones, revisar con el Administrador de dispositivos o
+`Get-CimInstance Win32_SerialPort`). El frontend reintenta la conexión por
+WebSocket cada 2 s si el backend no está disponible.
+
 ## Función de cada carpeta
 
-| Carpeta | Función y contenido |
-| --- | --- |
-| [`digram/`](digram/) | Documentación del montaje: diagrama PDF, imagen del circuito y lista de componentes `bom.csv`. El nombre de la carpeta se conserva tal como se creó. |
-| [`servo_60_grados/`](servo_60_grados/servo_60_grados.ino) | Sketch de referencia para Arduino IDE: alterna automáticamente entre 0° y 60° usando D2. Prueba independiente de Python. |
-| [`arduino/`](arduino/README.md) | Controlador USB en Python, firmware que recibe órdenes, diagnóstico del sensor de sonido, pruebas del firmware en C++ y `upload.ps1`. |
-| [`perip/`](perip/README.md) | Punto de entrada central para cámara, servo e integración con IA; lanzadores, instaladores, lógica de movimiento y pruebas. |
-| [`emotion-detector/`](emotion-detector/README.md) | Repositorio externo clonado en la rama `dev`, con modelos de rostro y expresión facial. Incluye la adaptación local. |
-| [`human-detector/`](HUMAN_DETECTION.md) | Clon de MobileNet-SSD para detección de personas mediante OpenCV DNN. |
+Estructura completa del proyecto. `iot/` tiene su propio detalle ampliado en
+[`iot/README.md`](iot/README.md); aquí se ve el conjunto para no perder de
+vista cómo encajan las áreas entre sí.
 
-Dentro de `perip/`:
+```text
+person-tracking-camera-system/
+├── start.sh                     # Único lanzador: prepara entornos y arranca iot/tracking/tracking.py
+├── .env.example                 # Plantilla opcional: cámara, puerto COM, rutas de Python
+├── CONTEXTO_PROYECTO.json       # Memoria de continuidad entre sesiones de trabajo
+├── README.md                    # Este archivo
+├── HUMAN_DETECTION.md           # Detalle de la detección de personas (MobileNet-SSD)
+├── LIGHT_CONTROL.md             # Detalle del control de luz por presencia y sonido
+│
+├── docs/                        # Documentación del montaje físico (sin código)
+│   ├── Circuito-Conexión-Servo-motor-sg90.pdf   # Esquema eléctrico
+│   ├── visual_circuito.png                      # Foto/diagrama del circuito armado
+│   └── bom.csv                                  # Lista de materiales
+│
+├── iot/                          # TODO lo que habla con hardware — ver iot/README.md
+│   ├── firmware/servo_usb/       # Corre EN el Arduino (AVR), un archivo por componente
+│   │   ├── servo_usb.ino         # setup/loop + parser del protocolo serie
+│   │   ├── pins.h                # Mapa único de pines: D2 servo, D3 relé, D4 sonido, D5 DHT11
+│   │   ├── servo_control.h       # Clase ServoControl (D2)
+│   │   ├── relay_light.h         # Clase LightControl (D3)
+│   │   ├── sound_sensor.h        # Clase SoundGesture (D4)
+│   │   └── dht11_sensor.h        # Clase DHT11Sensor (D5)
+│   ├── firmware-tests/           # Prueba la lógica de arriba en PC, sin placa
+│   │   ├── test_light.cpp        # g++ de escritorio, con Arduino simulado
+│   │   └── Servo.h               # Reemplazo mínimo de la librería Servo
+│   ├── host/                     # ÚNICO lugar que abre el puerto COM — corre en Windows
+│   │   ├── serial_bridge.py      # Clase USB: protocolo serie. Todo lo demás la importa, nadie la duplica
+│   │   └── upload.ps1            # Compila y carga el firmware con arduino-cli, sin abrir el IDE
+│   ├── diagnostics/               # Scripts de verificación puntual, sin cámara
+│   │   ├── check_sound.py        # -> importa host/serial_bridge.py
+│   │   └── check_temp.py         # -> importa host/serial_bridge.py
+│   └── tracking/                  # Cámara + IA + decisión de ángulo/luz — arrancado por start.sh
+│       ├── tracking.py           # Punto de entrada -> importa host/serial_bridge.py y ai/comp_vision/emotion-detector
+│       ├── tracking_control.py   # Lógica pura de ángulo/luz, sin hardware (para probar sin placa)
+│       ├── camera.py             # Cámara USB, independiente del Arduino
+│       ├── human_detector.py     # -> usa los pesos de ai/comp_vision/human-detector/
+│       ├── windows_ai.py         # Ubica el Python de IA en el disco de Windows
+│       ├── check_requirements.py # Verifica versiones fijadas, lo usa start.sh
+│       ├── setup.py / setup_ai.py # Instaladores de entornos
+│       └── captures/             # Fotos guardadas por camera.py
+│
+├── ai/comp_vision/                # Modelos de visión reutilizados, sin reentrenar
+│   ├── emotion-detector/          # Rostro + expresión <- lo carga iot/tracking/tracking.py
+│   └── human-detector/            # MobileNet-SSD <- lo carga iot/tracking/human_detector.py
+│
+├── backend/                       # API del dashboard — corre en Windows (abre el puerto COM)
+│   ├── main.py                   # -> importa iot/host/serial_bridge.py directo; expone REST + WebSocket
+│   └── run.ps1                   # Levanta uvicorn desde WSL vía el puente a PowerShell
+│
+└── frontend/                      # Dashboard web — corre en WSL, sin tocar hardware
+    └── src/App.jsx                # -> consume backend/main.py por HTTP y WebSocket
+```
 
-| Archivo o carpeta | Responsabilidad |
-| --- | --- |
-| `camera.py` | Listar cámaras, abrir video y guardar una foto; selecciona la USB por nombre. |
-| `servo.py` | Reutilizar `arduino/servo.py` desde esta carpeta, sin duplicar el controlador. |
-| `tracking.py` | Coordinar cámara, ambos detectores, visualización, selección del objetivo, servo y órdenes de luz. |
-| `tracking_control.py` | Decidir los ángulos, los límites, la frecuencia de cambios y la parada al perder el objetivo. |
-| `human_detector.py` | Adaptador de MobileNet-SSD; filtra la clase VOC 15 (persona) con confianza mínima 0.5. |
-| `windows_ai.py` | Localizar el Python de IA instalado en el disco de Windows. |
-| `check_requirements.py` | Comprobar las versiones instaladas sin importar TensorFlow ni consultar la red; lo usa `start.sh`. |
-| `setup.py` / `setup_ai.py` | Preparar los entornos de cámara/control básico y de IA. |
-| `test_tracking_control.py` | Pruebas de la lógica del servo sin activar hardware. |
-| `test_human_detector.py` | Pruebas del adaptador de detección de personas sin cámara. |
-| `captures/` | Fotos guardadas por `camera.py`; excluidas de Git. |
+### Cómo se comunican las carpetas
 
-Dentro de `arduino/`:
+No hay una carpeta que hable directo con otra por imports cruzados sueltos;
+cada flecha de abajo es una comunicación real y concreta (import de Python,
+llamada HTTP/WebSocket, o cable USB):
 
-| Archivo o carpeta | Responsabilidad |
-| --- | --- |
-| `servo.py` | Controlador serie: clase `USB`, puente a Windows y CLI `--check`, `--angle`, `--demo`. |
-| `check_sound.py` | Diagnóstico acotado de D4 y del estado lógico de D3, sin cámara. |
-| `firmware/servo_usb/servo_usb.ino` | Firmware activo: protocolo serie, servo D2, relé D3, sensor de sonido D4 y sensor DHT11 D5. |
-| `firmware/servo_usb/light_control.h` | Lógica de temporizador de luz y del gesto de palmadas, aislada para poder probarla. |
-| `check_temp.py` | Diagnóstico del sensor DHT11 (temperatura y humedad) en D5, sin cámara. |
-| `tests/test_light.cpp` | Pruebas de esa lógica compiladas en el PC, sin placa. |
-| `upload.ps1` | Compila, carga y verifica el firmware con `arduino-cli` de la instalación Windows de Arduino IDE. |
+1. **`iot/firmware/` → `iot/host/`**: cable USB, protocolo serie ASCII a
+   115200 baudios (`PING`, `SET`, `LIGHT ...`, `SOUND ...`, `TEMP READ`).
+2. **`iot/host/serial_bridge.py` es el único punto de entrada al Arduino.**
+   Tres carpetas distintas lo importan, ninguna reimplementa el protocolo:
+   - `iot/diagnostics/*.py` (`from serial_bridge import USB`)
+   - `iot/tracking/tracking.py` (carga el archivo por ruta con `importlib`)
+   - `backend/main.py` (`from serial_bridge import USB`, ver más abajo)
+3. **`iot/tracking/` → `ai/comp_vision/`**: `tracking.py` y
+   `human_detector.py` cargan los modelos por ruta absoluta (`Path(__file__)`
+   con varios `.parent`), no los copian ni los duplican.
+4. **`iot/tracking/` → `iot/firmware/` (indirecto, vía `host/`)**: cuando
+   `tracking.py` detecta un rostro o persona, calcula el ángulo y manda
+   `SET <ángulo>` / `LIGHT PERSON` por `serial_bridge.py`.
+5. **`backend/` → `iot/host/`**: `backend/main.py` hace
+   `sys.path.insert(0, ".../iot/host")` e importa `serial_bridge.USB`
+   directamente (mismo proceso, no subproceso) porque ambos necesitan correr
+   con el Python de Windows para abrir el puerto COM. Sondea `TEMP READ` cada
+   2.5 s en un hilo aparte.
+6. **`frontend/` → `backend/`**: HTTP (`GET /api/temperature`) y WebSocket
+   (`/ws/temperature`) sobre `localhost:8000`. Es la única comunicación por
+   red del proyecto; todo lo anterior es import directo o cable USB.
 
-Dentro de `emotion-detector/`, `face_detector/` contiene el detector Caffe y
-`model/` la arquitectura JSON y los pesos HDF5 del clasificador. `detector.py`
-carga estos recursos mediante rutas independientes del directorio de ejecución.
+Un efecto práctico de (2) y (5): mientras el backend tiene el puerto COM
+abierto, ningún otro script (`tracking.py`, un diagnóstico) puede usarlo a la
+vez — hay que cerrar uno antes de abrir el otro.
 
 En la raíz, `start.sh` coordina el arranque, `.env.example` documenta las
 variables opcionales y `CONTEXTO_PROYECTO.json` guarda la memoria de continuidad
@@ -204,18 +297,18 @@ emocional de la persona y no se utiliza para decidir el movimiento del servo.
 | Cámara externa | `USB 2.0 CAMERA`; índice 2 en las pruebas originales |
 | Imagen comprobada | 640 × 480 píxeles |
 | Plataforma | Windows con Ubuntu WSL y Python 3.12 en los entornos configurados |
-| Firmware activo | `arduino/firmware/servo_usb/servo_usb.ino` |
+| Firmware activo | `iot/firmware/servo_usb/servo_usb.ino` |
 
 La tensión de red **nunca** se conecta a D3, D4 ni a la protoboard del Arduino.
 El montaje del lado de corriente alterna debe estar aislado y encerrado.
 
 | Entorno | Uso |
 | --- | --- |
-| `arduino/.venv/` | Entorno de la primera etapa del controlador; conserva pySerial, que el Python de Windows reutiliza. |
-| `perip/.venv/` | Entorno de WSL para los lanzadores; solo necesita biblioteca estándar. |
-| `perip/.venv-win/` | Python de Windows con OpenCV para la cámara básica. |
+| `iot/.venv/` | Entorno de la primera etapa del controlador; conserva pySerial, que el Python de Windows reutiliza. |
+| `iot/tracking/.venv/` | Entorno de WSL para los lanzadores; solo necesita biblioteca estándar. |
+| `iot/tracking/.venv-win/` | Python de Windows con OpenCV para la cámara básica. |
 | `%LOCALAPPDATA%\camera-ai\venv` | Entorno activo de IA en el disco local de Windows. En este equipo: `C:\Users\User\AppData\Local\camera-ai\venv`. |
-| `perip/.venv-ai/` | Entorno de IA de las primeras pruebas en WSL; permanece en disco, pero ya no se usa. |
+| `iot/tracking/.venv-ai/` | Entorno de IA de las primeras pruebas en WSL; permanece en disco, pero ya no se usa. |
 
 Dependencias fijadas de IA: TensorFlow 2.16.2, tf-keras 2.16.0, NumPy 1.26.4,
 opencv-python 4.11.0.86, cv2-enumerate-cameras 1.3.3 y pySerial 3.5.
@@ -225,14 +318,15 @@ opencv-python 4.11.0.86, cv2-enumerate-cameras 1.3.3 y pySerial 3.5.
 1. **Prueba autónoma con Arduino IDE.** Montaje que movía el servo con la
    biblioteca `Servo` y señal en D2.
 2. **Migración del control a Python.** Firmware `servo_usb` con comandos por
-   puerto serie y `arduino/servo.py` para comprobar, posicionar y ciclar.
+   puerto serie y el controlador serie (hoy `iot/host/serial_bridge.py`) para
+   comprobar, posicionar y ciclar.
 3. **Diagnóstico del servo inmóvil.** Arduino confirmaba órdenes y parpadeaban
    sus luces, pero no había movimiento; tampoco con el sketch autónomo. El
    usuario reconectó el cable del servomotor y volvió a funcionar. Las respuestas
    `OK` y las luces, por sí solas, no demuestran movimiento físico.
 4. **Restauración del firmware para Python** y verificación del protocolo.
-5. **Centralización de los periféricos** en `perip/` y selección de la cámara USB
-   por nombre, para no depender de un índice fijo.
+5. **Centralización de los periféricos** (hoy `iot/tracking/`) y selección de la
+   cámara USB por nombre, para no depender de un índice fijo.
 6. **Incorporación del repositorio de IA.** Clon de
    [PLINIORZAVALA/emotion-detector](https://github.com/PLINIORZAVALA/emotion-detector)
    en `dev` desde el commit `1c53018`. Se reutilizaron sus modelos; no se entrenó
@@ -245,9 +339,9 @@ opencv-python 4.11.0.86, cv2-enumerate-cameras 1.3.3 y pySerial 3.5.
    local, sin modificar los originales.
 8. **Conexión entre rostro y servo.** Selección del rostro mayor, cálculo del
    ángulo y envío de órdenes a COM3.
-9. **Detección de personas.** Clon de MobileNet-SSD en `human-detector/` y
-   adaptador `perip/human_detector.py`. El servo prioriza el rostro y sigue el
-   cuerpo cuando no hay rostros.
+9. **Detección de personas.** Clon de MobileNet-SSD (hoy
+   `ai/comp_vision/human-detector/`) y adaptador `human_detector.py`. El servo
+   prioriza el rostro y sigue el cuerpo cuando no hay rostros.
 10. **Control de luz.** Relé en D3 y sensor de sonido en D4, con temporizador
     autónomo en el Arduino y gesto de palmadas.
 11. **Publicación.** El proyecto se trasladó al repositorio
@@ -256,11 +350,18 @@ opencv-python 4.11.0.86, cv2-enumerate-cameras 1.3.3 y pySerial 3.5.
     protocolo de un solo cable escrita a mano (sin librerías externas). D0 y D2
     quedaron descartados por chocar con el puerto serie y con el servo; el dato
     quedó en **D5**. Comando serie `TEMP READ` y diagnóstico
-    `arduino/check_temp.py`.
+    `iot/diagnostics/check_temp.py`.
+13. **Monitor en vivo y reorganización por áreas.** Se agregó un dashboard
+    (`backend/` FastAPI + `frontend/` React) que reutiliza el mismo puente
+    serie que el resto del proyecto. Con eso, se reorganizó todo por área:
+    `iot/` (hardware, dividido en `firmware/`, `firmware-tests/`, `host/`,
+    `diagnostics/`, `tracking/`), `ai/comp_vision/` (modelos de visión) y
+    `docs/` (diagrama y BOM), reemplazando las antiguas `arduino/`, `perip/`,
+    `human-detector/`, `emotion-detector/` y `digram/` de nivel superior.
 
 ## Comandos de uso y diagnóstico
 
-Desde `perip/`, tras activar `.venv`:
+Desde `iot/tracking/`, tras activar `.venv`:
 
 ```bash
 # Cámara sin IA ni servo
@@ -268,11 +369,6 @@ python camera.py --list
 python camera.py
 python camera.py --check
 python camera.py --snapshot captures/foto.jpg
-
-# Servo manual: un comando cada vez
-python servo.py --port COM3 --check
-python servo.py --port COM3 --demo --cycles 3
-python servo.py --port COM3 --angle 90
 
 # Integración: elegir el modo necesario
 python tracking.py
@@ -282,7 +378,15 @@ python tracking.py --reverse
 python tracking.py --seconds 30
 ```
 
-Diagnóstico del sensor de sonido y del relé, sin cámara, desde `arduino/`:
+Servo manual, un comando cada vez, desde `iot/host/`:
+
+```bash
+python serial_bridge.py --port COM3 --check
+python serial_bridge.py --port COM3 --demo --cycles 3
+python serial_bridge.py --port COM3 --angle 90
+```
+
+Diagnóstico del sensor de sonido y del relé, sin cámara, desde `iot/diagnostics/`:
 
 ```bash
 python check_sound.py --port COM3 --seconds 40
@@ -291,7 +395,8 @@ python check_sound.py --port COM3 --seconds 40
 Registra cada cambio de nivel en D4, el contador de ruidos que lleva el propio
 Arduino y los cambios de estado de D3. Aborta ante cualquier respuesta `ERR`.
 
-Diagnóstico del sensor DHT11 (temperatura y humedad), sin cámara, desde `arduino/`:
+Diagnóstico del sensor DHT11 (temperatura y humedad), sin cámara, desde
+`iot/diagnostics/`:
 
 ```bash
 python check_temp.py --port COM3 --seconds 20
@@ -307,12 +412,12 @@ comando manual `--angle` mantiene la orden un segundo y después libera el servo
 
 ```bash
 cd /home/tucu/yo/person-tracking-camera-system
-perip/.venv/bin/python -m unittest discover -s perip -p 'test_*.py'
-g++ -std=c++11 -Wall -Wextra -Werror -I arduino/tests arduino/tests/test_light.cpp -o /tmp/camera_test_light
+iot/tracking/.venv/bin/python -m unittest discover -s iot/tracking -p 'test_*.py'
+g++ -std=c++11 -Wall -Wextra -Werror -I iot/firmware-tests iot/firmware-tests/test_light.cpp -o /tmp/camera_test_light
 /tmp/camera_test_light
 ```
 
-`arduino/upload.ps1 -CompileOnly` compila el firmware para Uno sin cargar la
+`iot/host/upload.ps1 -CompileOnly` compila el firmware para Uno sin cargar la
 placa.
 
 ## Alcance actual y trabajo pendiente
@@ -341,7 +446,7 @@ recibieron `ERR COMMAND` (0.5 %). Un `PING` no puede fallar por lógica, así qu
 hay bytes alterándose en el trayecto. Sospecha principal: a 16 MHz el UART del
 Uno genera unos 117 647 baudios reales frente a los 115 200 nominales, un +2.1 %
 de error, en el límite de la tolerancia de 8N1. Bajar a 57 600 o 38 400 baudios
-en el firmware y en `arduino/servo.py` reduciría el error por debajo del 0.8 %.
+en el firmware y en `iot/host/serial_bridge.py` reduciría el error por debajo del 0.8 %.
 Pendiente de decidir y probar.
 
 **3. La cámara `USB 2.0 CAMERA` no está conectada.** Windows solo enumera

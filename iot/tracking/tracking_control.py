@@ -1,0 +1,62 @@
+"""Decisiones del servo sin dependencias de cámara, IA o USB."""
+
+
+def select_target(faces, people):
+    """Prioriza el rostro mayor; sin rostro, el cuerpo mayor."""
+    boxes = faces or people
+    if not boxes:
+        return None, 'Sin objetivo'
+    box = max(boxes, key=lambda b: (b[2] - b[0]) * (b[3] - b[1]))
+    return box, 'Rostro' if faces else 'Persona'
+
+
+class PresenceLight:
+    """Renueva el temporizador del Arduino sin saturar el puerto serie."""
+    def __init__(self):
+        self.last_sent = float('-inf')
+        self.was_present = False
+
+    def update(self, present, now):
+        disappeared = self.was_present and not present
+        self.was_present = present
+        # Final renewal starts the full grace period when detection disappears.
+        # Never send OFF: the sound sensor shares this timer in Arduino.
+        if disappeared or (present and now - self.last_sent >= 0.5):
+            self.last_sent = now
+            return 'LIGHT PERSON'
+        return None
+
+
+class FaceServo:
+    def __init__(self, minimum=0, maximum=90, reverse=False):
+        if not 0 <= minimum < maximum <= 180:
+            raise ValueError('Se requiere 0 <= mínimo < máximo <= 180')
+        self.minimum, self.maximum, self.reverse = minimum, maximum, reverse
+        self.angle = round((minimum + maximum) / 2)
+        self.last_seen = None
+        self.last_sent = float('-inf')
+        self.streak = 0
+        self.active = False
+
+    def update(self, center, now):
+        if center is None:
+            self.streak = 0
+            if self.active and now - self.last_seen >= 1.0:
+                self.active = False
+                return 'STOP'
+            return None
+        self.last_seen = now
+        self.streak += 1
+        if self.streak < 3 or now - self.last_sent < 0.15:
+            return None
+        center = max(0.0, min(1.0, center))
+        if self.reverse:
+            center = 1 - center
+        target = round(self.minimum + center * (self.maximum - self.minimum))
+        difference = target - self.angle
+        if self.active and abs(difference) < 3:
+            return None
+        self.angle += max(-5, min(5, difference))
+        self.angle = max(self.minimum, min(self.maximum, self.angle))
+        self.last_sent, self.active = now, True
+        return f'SET {self.angle}'

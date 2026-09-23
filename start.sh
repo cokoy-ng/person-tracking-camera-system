@@ -3,7 +3,7 @@
 set -Eeuo pipefail
 
 project_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-perip_dir="$project_dir/perip"
+tracking_dir="$project_dir/iot/tracking"
 
 fail() { printf 'Error: %s\n' "$*" >&2; exit 1; }
 trap 'printf "Error en el arranque (línea %s). Revisa el mensaje anterior.\n" "$LINENO" >&2' ERR
@@ -68,18 +68,18 @@ for argument in "$@"; do
 done
 
 for relative_file in \
-    human-detector/deploy.prototxt human-detector/mobilenet_iter_73000.caffemodel \
-    perip/human_detector.py \
-    perip/tracking.py perip/check_requirements.py arduino/servo.py \
-    emotion-detector/detector.py emotion-detector/requirements-windows.txt \
-    emotion-detector/model/67emotion_human.json emotion-detector/model/67emotion_human.h5 \
-    emotion-detector/face_detector/deploy.prototxt \
-    emotion-detector/face_detector/res10_300x300_ssd_iter_140000.caffemodel; do
-    [[ -s "$project_dir/$relative_file" ]] || fail "Falta $relative_file. Comprueba el proyecto y emotion-detector/dev."
+    ai/comp_vision/human-detector/deploy.prototxt ai/comp_vision/human-detector/mobilenet_iter_73000.caffemodel \
+    iot/tracking/human_detector.py \
+    iot/tracking/tracking.py iot/tracking/check_requirements.py iot/host/serial_bridge.py \
+    ai/comp_vision/emotion-detector/detector.py ai/comp_vision/emotion-detector/requirements-windows.txt \
+    ai/comp_vision/emotion-detector/model/67emotion_human.json ai/comp_vision/emotion-detector/model/67emotion_human.h5 \
+    ai/comp_vision/emotion-detector/face_detector/deploy.prototxt \
+    ai/comp_vision/emotion-detector/face_detector/res10_300x300_ssd_iter_140000.caffemodel; do
+    [[ -s "$project_dir/$relative_file" ]] || fail "Falta $relative_file. Comprueba el proyecto y ai/comp_vision/emotion-detector."
 done
 
 # Evita dos arranques simultáneos con este lanzador, incluyendo instalaciones.
-exec 9>"$perip_dir/.tracking.lock"
+exec 9>"$tracking_dir/.tracking.lock"
 flock -n 9 || fail 'Ya hay otra ejecución de start.sh. Ciérrala antes de iniciar otra.'
 
 printf '[1/4] Comprobando Python de Windows…\n'
@@ -109,8 +109,8 @@ if [[ ! -f "$CAMERA_AI_PYTHON" ]]; then
     "$ARDUINO_WINDOWS_PYTHON" -m venv "$(wslpath -w "$ai_env_dir")"
 fi
 [[ -x "$CAMERA_AI_PYTHON" ]] || fail "No se puede ejecutar $CAMERA_AI_PYTHON."
-requirements_path="$(wslpath -w "$project_dir/emotion-detector/requirements-windows.txt")"
-checker_path="$(wslpath -w "$perip_dir/check_requirements.py")"
+requirements_path="$(wslpath -w "$project_dir/ai/comp_vision/emotion-detector/requirements-windows.txt")"
+checker_path="$(wslpath -w "$tracking_dir/check_requirements.py")"
 if "$CAMERA_AI_PYTHON" "$checker_path" "$requirements_path"; then
     :
 else
@@ -124,10 +124,10 @@ fi
 
 printf '[3/4] Preparando ejecución desde WSL…\n'
 # El lanzador Linux solo usa la biblioteca estándar; la IA y pySerial corren en Windows.
-if [[ ! -x "$perip_dir/.venv/bin/python" ]]; then
-    python3 -m venv --without-pip "$perip_dir/.venv"
+if [[ ! -x "$tracking_dir/.venv/bin/python" ]]; then
+    python3 -m venv --without-pip "$tracking_dir/.venv"
 fi
-source "$perip_dir/.venv/bin/activate"
+source "$tracking_dir/.venv/bin/activate"
 printf 'Cámara: %s | Puerto predeterminado: %s\n' "$CAMERA_NAME" "$ARDUINO_PORT"
 printf 'Python de IA: %s\n' "$CAMERA_AI_PYTHON"
 if [[ "$mode" == setup-only ]]; then
@@ -149,4 +149,4 @@ else
     printf '[4/4] Iniciando cámara, rostros, personas y control configurado del servo…\n'
 fi
 cd -- "$project_dir"
-exec "$perip_dir/.venv/bin/python" "$perip_dir/tracking.py" "${defaults[@]}" "${tracking_args[@]}"
+exec "$tracking_dir/.venv/bin/python" "$tracking_dir/tracking.py" "${defaults[@]}" "${tracking_args[@]}"

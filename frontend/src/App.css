@@ -1,0 +1,106 @@
+:root {
+  color-scheme: light dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+.dashboard {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+h1 {
+  font-size: 1.4rem;
+  margin: 0;
+}
+
+.status {
+  font-size: 0.85rem;
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.status.online {
+  background: #14532d;
+  color: #86efac;
+}
+
+.status.offline {
+  background: #451a03;
+  color: #fdba74;
+}
+
+.hint,
+.error {
+  opacity: 0.8;
+}
+
+.error {
+  color: #fca5a5;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.card {
+  background: #1e293b;
+  border-radius: 1rem;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.label {
+  font-size: 0.85rem;
+  opacity: 0.7;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.value {
+  font-size: 2.5rem;
+  font-weight: 700;
+}
+
+.sparkline {
+  width: 100%;
+  height: 40px;
+}
+
+.sparkline polyline {
+  stroke: #38bdf8;
+}
+
+.timestamp {
+  margin-top: 1.5rem;
+  font-size: 0.8rem;
+  opacity: 0.6;
+}
+
+@media (max-width: 480px) {
+  .cards {
+    grid-template-columns: 1fr;
+  }
+}

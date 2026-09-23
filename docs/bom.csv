@@ -1,0 +1,6 @@
+﻿Nombre,Cantidad,Componente
+"D1",1,"Rojo LED"
+"1",1," Placa de pruebas pequeña"
+"U1",1," Arduino Uno R3"
+"SERVO2",1,"Posicional Microservomotor"
+"R1",1,"1 kΩ Resistencia"
