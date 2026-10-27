@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "actualizado": "2026-09-22T21:30:00-05:00",
+  "actualizado": "2026-10-26",
   "idioma": "es",
   "proposito": "Memoria de continuidad para retomar rápidamente este proyecto. Leer primero este archivo y después consultar solo los archivos relevantes para la siguiente tarea.",
   "resumen": "Integración local de cámara USB, detección de rostros con expresión facial, detección de personas, control de un servo SG90, control de una luz por relé y un sensor DHT11 (temperatura/humedad), todo sobre un Arduino Uno. El código está en Ubuntu WSL; el acceso USB y la inferencia se ejecutan en Windows. Además hay un dashboard web (backend FastAPI + frontend React) que muestra la temperatura y humedad en vivo, reutilizando el mismo controlador serie que el resto del proyecto. El 2026-09-22 se reorganizó todo por áreas (iot/, ai/comp_vision/, docs/, backend/, frontend/) reemplazando las carpetas arduino/ y perip/ de nivel superior; ya está commiteado (f9245ed). El lanzador start.sh y el dashboard están probados de extremo a extremo con hardware real. Quedan cinco incidencias abiertas, la principal es que el sensor de sonido de D4 no entrega señal.",
@@ -18,7 +18,7 @@
     "reorganizacion_2026_09_22": "arduino/ y perip/ ya no existen como carpetas de nivel superior. Todo el hardware vive en iot/ (firmware/, firmware-tests/, host/, diagnostics/, tracking/). Los modelos de visión se movieron a ai/comp_vision/ (emotion-detector/, human-detector/). El diagrama y BOM están en docs/ (antes digram/). Se agregaron backend/ (FastAPI) y frontend/ (React) para un dashboard de temperatura/humedad en vivo. Ya commiteado en f9245ed; no repetir el movimiento de archivos."
   },
   "objetivo_del_usuario": {
-    "actual": "El DHT11, el dashboard web y la reorganización por áreas ya están hechos y verificados. Lo que queda abierto es resolver la incidencia sonido-d4-sin-senal (prioridad alta) y decidir si se baja la velocidad del puerto serie para eliminar los ERR COMMAND esporádicos.",
+    "actual": "Integración del criadero con DHT11 en A1, alarma A0, foquito/calefacción A2 y puerta con 28BYJ-48. Ver criadero_aves; el firmware activo ya no es servo_usb.",
     "producto_futuro": "Varias cámaras conectadas por cable, cada una movida por servomotores, detectarán personas y orientarán la cámara para mantener el seguimiento visual.",
     "nombre": "person-tracking-camera-system",
     "descripcion": "Sistema de cámaras conectadas por cable que utiliza visión artificial y servomotores para detectar y seguir personas automáticamente.",
@@ -78,7 +78,10 @@
     "puerto": "Variable entre sesiones (fue COM3, luego COM6 el 2026-09-22). Verificar siempre antes de usar.",
     "baudios": 115200,
     "camara_objetivo": "USB 2.0 CAMERA",
-    "camaras_disponibles_2026_09_14": ["0: HP HD Camera", "1: Camo"],
+    "camaras_disponibles_2026_09_14": [
+      "0: HP HD Camera",
+      "1: Camo"
+    ],
     "resolucion_probada": "640x480",
     "seguridad": "La tensión de red nunca se conecta a D3, D4 ni a la protoboard. El montaje de corriente alterna debe estar aislado y encerrado.",
     "nota": "Seleccionar la cámara por nombre; el índice y el puerto deben verificarse si cambian las conexiones. No asumir que un OK serie o las luces RX/TX/L confirman giro físico ni encendido del foco."
@@ -269,5 +272,26 @@
     "No guardar credenciales ni códigos de autenticación en archivos de contexto.",
     "Para ejecutar Python de Windows, usar cámara/USB o instalar paquetes desde herramientas del asistente puede ser necesaria autorización fuera del aislamiento; no atribuir esos bloqueos al proyecto.",
     "Las pruebas que requieren acción física del usuario se lanzan en segundo plano y se le avisa antes de empezar a contar el tiempo."
-  ]
+  ],
+  "criadero_aves": {
+    "estado": "BROODER_3 cargado en COM3. Tras confirmar el usuario puerta físicamente abierta, cierre ejecutado: DOOR CLOSING, avance observado desde 0 y OK DOOR DONE, position=49152. Lecturas 23 C / 55 % HR. Nueva validación de comandos por trama para scripts.",
+    "firmware": "iot/firmware/brooder/brooder.ino",
+    "documentacion": "iot/firmware/brooder/README.md",
+    "carga": "iot/host/upload_brooder.ps1",
+    "pruebas": "iot/firmware-tests/test_brooder.cpp",
+    "pines": {
+      "A0": "alarma activa HIGH (tipo físico pendiente de comprobar)",
+      "A1": "mismo DHT11 antes en D5",
+      "A2": "foquito/orden de calefacción activo HIGH; relé futuro requiere verificar polaridad",
+      "D8-D11": "IN1-IN4 driver 28BYJ-48 5V"
+    },
+    "control": "BROODER_2: inicial abierto; <=32 C solicita cierre (incluye frío). >32 C inicial abierto permanece abierto; si cerrado espera más de 300000 ms continuos de calor para abrir. <=32 C, fallo de sensor o STOP reinicia temporizador. Calefacción ON <26/OFF >=30. Alarma inmediata fuera 26-32 o fallo/posición desconocida.",
+    "puerta": "12 vueltas por recorrido a 6 RPM. Sentido original cierra, inverso abre. Sin finales de carrera declarados; posición estimada por pasos. EEPROM conserva extremos; reinicio durante movimiento requiere referencia O/C. Posición inicial totalmente enrollada/abierta indicada por usuario.",
+    "limitaciones": "Pruebas de lógica cubren cinco minutos continuos y reinicio de temporizador; verificada lectura real y estado final de cierre por contador. Falta observación física del usuario y prueba térmica real de apertura tras cinco minutos. Sin finales de carrera, conteo no confirma movimiento físico. No usar scripts stepper ni modo cámara de start.sh con este firmware; --dashboard ya está adaptado.",
+    "serie": "115200; comandos de una letra terminados en newline, o tramas ~S53 / ~O4F / ~A41 / ~?3F con comprobación de byte. ? estado, S parada motor/calefacción, A auto, O referencia abierta, C cerrada.",
+    "inicio_sesion": "Ejecutar iot/diagnostics/start_brooder.py --port COM3 con Python Windows SOLO si físicamente abierta. Envía S, O, A mediante tramas verificadas: reinicia posición a abierto y cierra si <=32 C. A solo no reinicia la referencia. Reinicios eléctricos siguen conservando EEPROM por seguridad.",
+    "dashboard": "Dashboard actualizado: backend/main.py escucha TEMP/HUM + STATE de BROODER_3 sin enviar comandos ni STOP. backend/brooder_stream.py valida y combina las muestras; /api/brooder, /api/temperature, /api/temperature/history y /ws/temperature. Frontend muestra A1 temperatura/humedad, A0 alarma, A2 calefacción, puerta y gráfica. Estados de salida no confirman sonido/giro físicos. Arranque bash start.sh --dashboard --port COM3. Backend ocupa COM3: cerrar dashboard antes de diagnósticos serie o carga.",
+    "dashboard_verificado": "2026-10-26: dashboard iniciado con bash start.sh --dashboard --port COM3. REST e historial con datos reales; navegador de prueba muestra 25 C, 95 % HR, alarma/calefacción activadas y puerta cerrada por contador. Frontend build/lint y tres tests de telemetría OK. Vista escritorio y móvil sin errores JS ni desbordamiento horizontal. URL Windows http://localhost:5173; backend :8000.",
+    "calefaccion": "Enciende con temperatura <26 C, mantiene encendida hasta >=30 C, entonces apaga y no vuelve a encender hasta <26 C. Fallo de sensor siempre apaga."
+  }
 }

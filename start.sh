@@ -19,8 +19,8 @@ Sin opciones: prepara el entorno e inicia cámara, IA y servo.
 --check       Verifica dependencias y carga modelos, sin abrir dispositivos.
 --setup-only  Prepara y verifica dependencias, sin cargar modelos ni dispositivos.
 --list        Lista las cámaras de Windows, sin cargar IA ni abrir Arduino.
---dashboard   Levanta el monitor web de temperatura/humedad (backend + frontend)
-              en vez de cámara/servo. Usa el DHT11 en D5, no la cámara.
+--dashboard   Levanta el monitor web del criadero (backend + frontend).
+              Muestra DHT11 A1, alarma A0, calefacción A2 y puerta.
 
 Ejemplos:
   ./start.sh

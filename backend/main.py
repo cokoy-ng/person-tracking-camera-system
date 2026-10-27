@@ -1,95 +1,104 @@
-"""API de temperatura y humedad: lee el DHT11 por el puerto serie del Arduino
-y lo expone por HTTP y WebSocket para el frontend. Se ejecuta con el Python de
-Windows porque necesita abrir el puerto COM directamente."""
+"""Dashboard del criadero: escucha la telemetría, sin ordenar movimientos."""
 import asyncio
+from contextlib import asynccontextmanager
 import os
+from pathlib import Path
 import sys
 import time
-from pathlib import Path
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from brooder_stream import Telemetry
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "iot" / "host"))
-from serial_bridge import USB  # noqa: E402
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'iot' / 'host'))
+from serial_bridge import serial
 
-POLL_SECONDS = 2.5
 HISTORY_SIZE = 120
+state = {'serial': None, 'latest': None, 'history': [], 'clients': set()}
+telemetry = Telemetry()
 
-app = FastAPI(title="Temperatura y humedad")
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
-state = {"usb": None, "latest": None, "history": [], "clients": set()}
+def close_serial():
+    if state['serial'] is not None:
+        state['serial'].close()
+        state['serial'] = None
 
 
 def read_once():
-    response = state["usb"].request("TEMP READ")
-    if response == "ERR TEMP":
-        return {"ok": False, "timestamp": time.time()}
-    _, _, temperature, humidity = response.split()
-    return {
-        "ok": True,
-        "temperature": int(temperature),
-        "humidity": int(humidity),
-        "timestamp": time.time(),
-    }
+    global telemetry
+    if state['serial'] is None:
+        port = serial.Serial(port=None, baudrate=115200, timeout=0.5, write_timeout=2)
+        # Configurar antes de abrir: no reiniciar ni referenciar la puerta.
+        port.dtr = False
+        port.rts = False
+        port.port = os.environ.get('ARDUINO_PORT', 'COM3')
+        port.open()
+        state['serial'] = port
+        telemetry = Telemetry()
+    deadline = time.monotonic() + 7
+    while time.monotonic() < deadline:
+        line = state['serial'].readline().decode('ascii', errors='replace').strip()
+        reading = telemetry.feed(line)
+        if reading is not None:
+            return reading
+    raise TimeoutError('Sin telemetría del criadero durante 7 segundos')
 
 
 async def poll_loop():
-    loop = asyncio.get_event_loop()
     while True:
         try:
-            reading = await loop.run_in_executor(None, read_once)
+            reading = await asyncio.to_thread(read_once)
         except Exception as exc:
-            reading = {"ok": False, "error": str(exc), "timestamp": time.time()}
-        state["latest"] = reading
-        state["history"] = (state["history"] + [reading])[-HISTORY_SIZE:]
-        stale = set()
-        for ws in state["clients"]:
+            close_serial()
+            reading = {'ok': False, 'serial_connected': False, 'outputs_valid': False,
+                       'error': str(exc), 'timestamp': time.time()}
+        state['latest'] = reading
+        state['history'] = (state['history'] + [reading])[-HISTORY_SIZE:]
+        for ws in list(state['clients']):
             try:
-                await ws.send_json(reading)
+                await asyncio.wait_for(ws.send_json(reading), timeout=2)
             except Exception:
-                stale.add(ws)
-        state["clients"] -= stale
-        await asyncio.sleep(POLL_SECONDS)
+                state['clients'].discard(ws)
+        await asyncio.sleep(0.1 if reading.get('serial_connected') else 2)
 
 
-@app.on_event("startup")
-async def startup():
-    port = os.environ.get("ARDUINO_PORT") or None
-    state["usb"] = USB(port)
-    asyncio.create_task(poll_loop())
+@asynccontextmanager
+async def lifespan(app):
+    task = asyncio.create_task(poll_loop())
+    yield
+    task.cancel()
+    try:
+        await task
+    except asyncio.CancelledError:
+        pass
+    close_serial()  # Cerrar el monitor no envía STOP al control autónomo.
 
 
-@app.on_event("shutdown")
-async def shutdown():
-    if state["usb"]:
-        state["usb"].close()
+app = FastAPI(title='Criadero · sensores y control', lifespan=lifespan)
+app.add_middleware(CORSMiddleware, allow_origins=['*'], allow_methods=['GET'], allow_headers=['*'])
 
 
-@app.get("/api/temperature")
-def get_temperature():
-    return state["latest"] or {"ok": False, "timestamp": time.time()}
+@app.get('/api/temperature')
+@app.get('/api/brooder')
+def get_latest():
+    return state['latest'] or {'ok': False, 'outputs_valid': False, 'timestamp': time.time()}
 
 
-@app.get("/api/temperature/history")
+@app.get('/api/temperature/history')
 def get_history():
-    return state["history"]
+    return state['history']
 
 
-@app.websocket("/ws/temperature")
+@app.websocket('/ws/temperature')
 async def ws_temperature(websocket: WebSocket):
     await websocket.accept()
-    state["clients"].add(websocket)
-    if state["latest"]:
-        await websocket.send_json(state["latest"])
+    state['clients'].add(websocket)
     try:
+        if state['latest']:
+            await websocket.send_json(state['latest'])
         while True:
             await websocket.receive_text()
     except WebSocketDisconnect:
-        state["clients"].discard(websocket)
+        pass
+    finally:
+        state['clients'].discard(websocket)
