@@ -2,3 +2,7 @@
 
 # Historial local persistente del criadero (no versionar datos)
 backend/data/
+
+# Logs de ejecución del lanzador
+.runtime/
+__pycache__/

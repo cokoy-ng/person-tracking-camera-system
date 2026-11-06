@@ -1,4 +1,14 @@
 {
+  "lanzador_monitor_2026_11_05": {
+    "solicitud": "Usuario pidió un .sh en sh/ para iniciar todos los servicios de monitoreo y verificar conexión estable.",
+    "comando": "./sh/levantar_todo.sh inicia/verifica; --estado consulta sin iniciar; --stop cierra frontend/backend; --watch vigila; --port COM6 puerto explícito; --ayuda instrucciones.",
+    "implementacion": "sh/levantar_todo.sh es el único archivo de sh/. Python en scrips/monitor_servicios.py y documentación en docs/MONITOREO.md. Frontend con setsid, backend Windows; reutiliza servicios. Identifica procesos del proyecto antes de cerrar. Logs .runtime/ ignorados.",
+    "verificacion": "HTTP frontend, API backend, conexión serie, sensor/ciclo y salidas válidos, frescura<=8s, mínimo5lecturas nuevas durante15s continuos dentro45s, handshakeWebSocket y muestra real. Validación real reportó7lecturas21C44%HR,ciclo3,firmware16; calefacciónON,bombaOFF. No demuestra respuesta física ni estabilidad futura.",
+    "seguridad": "No envía órdenes de actuadores, STOP, AUTO ni referencia de puerta. Conserva bomba exclusivamente manual y control autónomo existente.",
+    "git": "Archivos nuevos del lanzador aún sin commit/push.",
+    "parada": "--stop solo cierra servicios y vigilancia de esta versión; no envía STOP ni silencia alarma del Arduino. Para parar actuadores usar UI antes de cerrar; control autónomo sigue. No se altera EEPROM ni alimentación.",
+    "validacion_lanzador": "Ayuda, estado, parada con puertos libres y repetición de parada comprobados. La vigilancia heredada de sh/monitor_servicios.py fue cerrada para liberar lock tras mover auxiliar. Arranque desde backend detenido confirmó PID3296/COM6,7lecturas21C44%HR/ciclo3 y WebSocket real. Servicios reanudados tras prueba; vigilancia antigua cerrada."
+  },
   "monitoreo_reanudado_2026_11_05": {
     "prioridad": "Estado más reciente: usuario solicitó levantar frontend y resolver ausencia de datos. Servicios reanudados para monitoreo; reemplaza cierre anterior solo respecto de servicios detenidos.",
     "servicios": "Frontend Vite http://localhost:5173 activo, sesión7792. Backend Windows http://localhost:8000 con COM6 activo, sesión72867, PID4524 observado. Verificar procesos antes de actuar.",

@@ -474,3 +474,7 @@ durante el seguimiento, incluyendo sentido y rango según el montaje definitivo.
 Tampoco se ha medido la precisión del clasificador de expresiones ni del detector
 de personas en las condiciones reales de uso, ni se ha probado la instalación
 desde un Windows vacío.
+
+### Arranque con verificación de conexión
+
+Ejecuta `./sh/levantar_todo.sh` desde WSL para iniciar el dashboard y comprobar lecturas nuevas del Arduino y el canal WebSocket. Usa `./sh/levantar_todo.sh --watch` para mantener la vigilancia. Consulta [las opciones del lanzador](docs/MONITOREO.md).
