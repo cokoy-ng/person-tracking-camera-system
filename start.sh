@@ -20,7 +20,7 @@ Sin opciones: prepara el entorno e inicia cámara, IA y servo.
 --setup-only  Prepara y verifica dependencias, sin cargar modelos ni dispositivos.
 --list        Lista las cámaras de Windows, sin cargar IA ni abrir Arduino.
 --dashboard   Levanta el monitor web del criadero (backend + frontend).
-              Muestra DHT11 A1, alarma A0, calefacción A2 y puerta.
+              Muestra DHT11 D2–D5 (selección de ciclo), servo D6, bomba D7, ventilador D8, calefacción D9 y alarma A0.
 
 Ejemplos:
   ./start.sh

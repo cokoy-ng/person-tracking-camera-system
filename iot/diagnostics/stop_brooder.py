@@ -1,4 +1,4 @@
-"""Pausa motor/calefacción del criadero. La alarma sigue supervisando.
+"""Pausa motor, calefacción y las tres salidas de aire. La alarma sigue supervisando.
 El STOP es volátil: al reiniciar la placa vuelve al modo automático.
 """
 import argparse
@@ -8,6 +8,8 @@ import time
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'host'))
 from serial_bridge import serial
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'backend'))
+from brooder_stream import Telemetry
 
 
 def main():
@@ -23,6 +25,7 @@ def main():
     with port:
         time.sleep(2.5)
         port.reset_input_buffer()
+        stream = Telemetry()
         for attempt in range(3):
             port.write(b'~S53\n')
             deadline = time.monotonic() + 8
@@ -30,8 +33,11 @@ def main():
                 line = port.readline().decode('ascii', errors='replace').strip()
                 if line:
                     print(line, flush=True)
-                if line.startswith('STATE ') and 'stopped=1' in line and 'heater=0' in line:
-                    print('CONFIRMED STOPPED: motor/calefaccion en pausa; alarma sigue supervisando.', flush=True)
+                reading = stream.feed(line)
+                air_off = reading and reading['cycle']['valid'] and not any(
+                    reading['cycle'][name] for name in ('humidifier', 'exhaust', 'intake'))
+                if reading and reading['stopped'] and not reading['heater'] and air_off:
+                    print('CONFIRMED STOPPED: motor/calefaccion/aireacion en pausa; alarma sigue supervisando.', flush=True)
                     return
                 if line == 'ERR FRAME':
                     break

@@ -1,5 +1,12 @@
 # Cámara USB, detección de rostros y personas, servo y luz con Arduino
 
+> **Estado activo — 31 de octubre de 2026:** criadero con firmware
+> `BROODER_9_THREE_AIR`. DHT11 en D2–D5 selecciona los cuatro ciclos; A1 ya no
+> se utiliza. D7 humidificación interna, A4 extracción, A5 entrada de aire,
+> A2 calefacción y A0 alarma temporizada. LCD retirado. Motor D8–D11. Ver [control del criadero](iot/firmware/brooder/README.md)
+> y [dashboard](backend/README.md). El sistema de cámara descrito abajo es
+> histórico y requiere otro firmware. Dashboard: http://localhost:5173.
+
 Sistema local que conecta una cámara USB con modelos de visión artificial y un
 Arduino Uno. Python detecta **rostros** (con estimación de expresión facial) y
 **personas**, orienta un servomotor SG90 hacia el objetivo elegido y controla un

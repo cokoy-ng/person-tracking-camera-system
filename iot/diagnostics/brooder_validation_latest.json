@@ -1,0 +1,58 @@
+{
+  "port": "COM6",
+  "physical_confirmation": false,
+  "commands": [
+    "S",
+    "!010*10",
+    "!110*11",
+    "!210*12",
+    "!410*14",
+    "4",
+    "Z",
+    "A",
+    "!422*15",
+    "!410*14",
+    "S",
+    "A",
+    "!022*11",
+    "!010*10",
+    "S",
+    "A",
+    "!122*10",
+    "!110*11",
+    "S",
+    "A",
+    "!222*13",
+    "!210*12",
+    "S",
+    "S",
+    "!410*14"
+  ],
+  "sensor_lines": [
+    "CYCLE id=0 pin=0 humidifier=0 exhaust=0 intake=0 reason=0",
+    "SENSOR D5=0 mask=8",
+    "CYCLE id=0 pin=0 humidifier=0 exhaust=0 intake=0 reason=0",
+    "SENSOR D5=0 mask=8",
+    "TEMP 26 HUM 45",
+    "CYCLE id=4 pin=5 humidifier=0 exhaust=0 intake=0 reason=4",
+    "SENSOR D5=0 mask=8",
+    "TEMP 26 HUM 45",
+    "CYCLE id=4 pin=5 humidifier=0 exhaust=0 intake=0 reason=4"
+  ],
+  "sensor_ok": true,
+  "servo_sequence_ack": true,
+  "alarm": [
+    "CONTROL modes=11102 outputs=00001 door_enabled=0 remaining=0,0,0,0,2"
+  ],
+  "heater": [
+    "CONTROL modes=21101 outputs=00000 door_enabled=0 remaining=2,0,0,0,0",
+    "CONTROL modes=21101 outputs=00000 door_enabled=0 remaining=2,0,0,0,0"
+  ],
+  "pump": [
+    "CONTROL modes=12101 outputs=01000 door_enabled=0 remaining=0,2,0,0,0"
+  ],
+  "fan": [
+    "CONTROL modes=11201 outputs=00100 door_enabled=0 remaining=0,0,2,0,0",
+    "CONTROL modes=11201 outputs=00100 door_enabled=0 remaining=0,0,2,0,0"
+  ]
+}

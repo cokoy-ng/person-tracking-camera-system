@@ -1,9 +1,239 @@
 {
-  "version": 2,
-  "actualizado": "2026-10-26",
+  "monitoreo_reanudado_2026_11_05": {
+    "prioridad": "Estado más reciente: usuario solicitó levantar frontend y resolver ausencia de datos. Servicios reanudados para monitoreo; reemplaza cierre anterior solo respecto de servicios detenidos.",
+    "servicios": "Frontend Vite http://localhost:5173 activo, sesión7792. Backend Windows http://localhost:8000 con COM6 activo, sesión72867, PID4524 observado. Verificar procesos antes de actuar.",
+    "conexion": "Arduino Uno COM6 confirmado por Win32_SerialPort. Backend abre con DTR/RTS false y consulta estado; no se enviaron órdenes de activación, movimiento, referencia ni reanudación.",
+    "ultima_consulta": "API reportó BROODER_16_MANUAL_PUMP, serial_connectedtrue, outputs_validtrue, sensorD4 ciclo3,22C44%HR,stoppedfalse,calefacciónON,ventiladorOFF,bombaOFF,servo y puerta detenidos. Estado lógico, no observación física. Arduino reporta automático activo; no atribuir activación a una orden del asistente.",
+    "reglas": "BombaD7 exclusivamente manual. Conservar EEPROM de puerta y confirmar extremo físico antes de referenciar. Polaridad físicaD9 pendiente. No confundir arranque de monitor con autorización para mover actuadores.",
+    "git": "Usuario solicitó commit de todos los últimos cambios. No solicitó push."
+  },
+  "cierre_total_2026_11_04": {
+    "prioridad": "ÚLTIMO ESTADO. Usuario solicitó PARAR TODO y actualizar contexto. Reemplaza todos los bloques anteriores que indiquen servicios o controlautomático activos. No reiniciar sin nueva solicitud.",
+    "servicios": "Detenido lanzador start.sh--dashboard--portCOM6 (sesión33856 finalizada), frontendVite5173 y backendWindows8000. Confirmado sin listeners8000/5173 en Linux(ss) y Windows(Get-NetTCPConnection).",
+    "parada_hardware": "POST/api/device actionstop recibió confirmedtrue con BROODER_16_MANUAL_PUMP,stoppedtrue,servo.stage0/runningfalse,door_control.runningfalse; calefacciónOFF,bombaOFF,ventiladorOFF. POST/api/control alarmmodeoffduration0 recibió confirmedtrue/onfalse. No se ordenaron movimientos ni referencias de puerta al cerrar.",
+    "ultima_lectura_confirmada": "D4,ciclo3,31C37%HR. Doorreferencedtrue,position0,target0,dooropen según contador, no observación física del asistente. No cambiar ni borrar referenciaEEPROM.",
+    "conexion_posterior": "Consulta posterior a los ACK reportó serial_connectedfalse/outputs_validfalse: ClearCommError PermissionError13 El dispositivo no reconoce el comando. No asumir estado físico posterior a pérdida de enlace ni diagnosticar causa. Se cerraron servicios sin intentar reconexión/recarga.",
+    "persistencia": "STOP y silencio manual de alarma son volátiles. BROODER_16 arranca automático para calefacción/ventilador cuando hay sensor/ciclo válido. Si usuario reinicia/alimenta de nuevo Arduino puede reactivar esas salidas. BombaD7 arrancaOFF y permanece exclusivamente manual. No confundir servidores detenidos con corte de alimentación.",
+    "firmware_y_pines": "BROODER_16_MANUAL_PUMP cargado/verificado COM6:12776flash/492RAM. SensorD2-D5selecciona1-4; servoD6; bombaD7LOW solo manual; ventiladorD8LOW automático; calefacciónD9LOW automática (polaridad física aún pendienteconfirmación); alarmaA0HIGH; motorD10-D13IN1-IN4 manual con referencia. A1-A5libres.",
+    "reglas_a_conservar": "NUNCA automatizar bomba por humedad o cambio de pin. Temporizador de bomba venceOFF; globalSTOP laapaga. Calefacción y ventilador adaptan rango a pin tras2lecturasválidas; nuevociclo restauraauto solo esas2salidas, STOP explícito se respeta. Puerta/servo manuales; nofalsearreferencia.",
+    "datos": "Conservar backend/data CSV, configurations y software/snapshots, e índiceSQLiteWindows LOCALAPPDATA/camera-brooder/events.sqlite3. Backend apagado deja de registrar lecturas/eventos. Sin commit/push de estos cambios.",
+    "validacion_previa": "45testsbackendOK; pruebasC++clima/firmware/manualpumpOK; frontendbuild/lintOK; ChromeWindows escritorio/móvilOK, bombaoffsoloEncender/Apagar y autoAPI409. ContextoJSONvalidado tras cierre.",
+    "reanudar": "Solo con nueva solicitud: comprobar placa/puerto actual y conexión, leer estado antes de actuar. Mantener bomba manual. Para controlclima usar Activarautomático según solicitud; revisar alarmaoff trasSTOP y restaurarlaauto solo explícitamente. No mover puerta ni servo como parte de arranque del monitor."
+  },
+  "motobomba_solo_manual_2026_11_04": {
+    "prioridad": "Última instrucción explícita del usuario: MOTOBOMBA SOLO MANUAL; ventilador es quien enfría. Reemplaza todas las descripciones históricas de bomba/humidifier automática por HRbaja y de3salidasclimaautomáticas.",
+    "correccion": "Se había vinculado incorrectamenteD7 aHRbaja. Se apagó inmediatamente porAPI modeoff sin duración y se eliminó automatismo enfirmware,APIyfrontend. No volver a inferir que bomba aumentaHR ni encenderla por humedad.",
+    "firmware": "BROODER_16_MANUAL_PUMP cargado/verificado COM6:12776flash/492RAM. D7bombaLOW exclusivamente manual; D8ventiladorLOW automático para enfriar (conserva ventilación porHRalta y bloqueo frío); D9calefacciónLOW automática. D2-D5 sensor selecciona1-4físicamente; D6servo y D10-D13puerta manuales; A0alarma, A1-A5libres.",
+    "bomba": "ArranqueOFF; cambia ciclo/Activarautomático no altera modo ni enciende bomba. Solo órdenesmanuales Encender/Apagar. Temporizador venceOFF, nuncaauto;STOP fuerzaOFF y posterior Activarauto no lareenciende. Bomba manual no condicionada a sensor niHR. ProtocoloyAPI rechazan auto. CampoAPI legacyhumidifier se conserva como identificador, no significa humidificaciónautomática.",
+    "frontend": "Activo http://localhost:5173 y backendWindows8000COM6 (lanzadorsesiónexec33856). MotobombaD7 soloEncender/Apagar; checkboxHastaApagar; temporizadorSeapaga; sin botónAuto ni umbralesHR. Activarauto solo calefacción/ventilador. No hay regulación automática deHRbaja mediante bomba.",
+    "validacion": "45testsbackendOK; C++clima y sketch verifican bombaOFF porHRbaja en4ciclos, cambiopinesyActivarauto sinarranque, manualindependientesensor,STOP/temporizador/OFF. Build/lintfrontendOK. ChromeWindowsreal: D4ciclo3,31C37%HR, automaticostoppedfalse; bombaoff/onfalse/manual_onlytrue; botonesEncender/Apagar; peticiónAPIauto409 sin actuar; móvil390sin desborde ni erroresJS.",
+    "estado_final": "BombaD7 apagada por firmware y modooff; calefacción/ventilador siguenauto con sensorD4ciclo3 (31C37%HR alverificar). No se activó bomba durante validación UI. No se movieron servo/puerta.",
+    "pendientes": "Polaridad físicaD9LOW aún sinconfirmaciónusuario. Movimiento del servo sí confirmado en conversación; bomba/ventilador físicos requieren observación. Puerta necesita extremo real confirmado antes de referencia. No introducir automatismo de bomba bajo ninguna circunstancia salvo nueva instrucción explícita."
+  },
+  "automatico_adaptativo_2026_11_04": {
+    "prioridad": "Último estado vigente. Usuario pidió regulación automática completa de temperatura/HR al cambiar físicamente señal de sensor entre ciclos. Reemplaza arranqueSTOP y estados anteriores sin sensor detectado.",
+    "firmware": "BROODER_15_AUTO_CYCLES cargado/verificado COM6:12690flash/500RAM. Arranque automático; no actúa clima sin dos lecturas válidas. Pines D2/D3/D4/D5 eligen1/2/3/4; A1-A5 libres; servoD6,bombaD7LOW,ventiladorD8LOW,calefacciónD9LOW,alarmaA0HIGH,motorD10-D13.",
+    "cambio_de_pin": "Al confirmar otro pin distinto del último ciclo válido, restaura modosauto para calefacción/bomba/ventilador y recalcula rangos, sin arrastrar manualon/off previos. Desconexión temporal y retorno al mismo pin conserva elecciónmanual. STOP explícito persiste aunque cambie cable; Activarautomático(A) liberaSTOP y restaura los3modosauto.",
+    "reglas": "Calefacción ON<=max-1/OFF>=max; siT<=mínimo recupera inmediatamente sin esperar60s; dentro del rango conserva espera60s. BombaHR ON<=centro-2 y OFF>=centro; máximoHR corta inmediato. Ventilador enfría porT>=máximo o seca porHR>=centro+2, apaga al volver a centros/bordes, bloqueado porT<=mínimo. Sin sensor/conflicto apaga clima. Servo/puerta manuales, no vinculados a clima; puerta sin referencia no provoca alarma climática cuando solo manual.",
+    "evidencia_real": "Sensor volvió a responder: D2diag1,D3diag1,D4diag0,D5diag1,mask4. Ciclo3pinD4 confirmado,31C39%HR,oktrue,stoppedfalse. Rangociclo3=27-29C/50-60%HR. Arduino informa heaterOFF,humidifierON,exhaustON y modosauto, coherente con calor y HRbaja. Esto confirma lectura y lógica reportada, no prueba bombeo/ventilación/calor físicos. Puerta quieta sinreferencia; servoquieto.",
+    "servicios": "Dashboard http://localhost:5173 y backendWindows8000COM6 activos, lanzador sesiónexec38758. Usuario autorizó dejar automático funcionando. No detener automáticamente al finalizar la conversación. Backend ocupa puertoCOM6: cerrar antes de diagnósticos o cargas.",
+    "validacion": "43testsbackendOK; C++4ciclos,conmutaciones1→2→3→4→1conambienteconstante,frío/HRbaja/límites,fallossensor,resetmanualalnuevopin,STOPpersistente y activaciónautoOK. Arduino compile/uploadverifyOK. Frontendbuild/lintOK; ChromeWindowsreal confirma ciclo3D4/31C39%HR,automáticostoppedfalse,4etiquetaspin,sinbotonesselecciónsoftware,sinerroresJS ni desbordemóvil390. No se ordenaron maniobras manuales durante verificaciónfinal: relés actuaron por lógicaauto autorizada.",
+    "pendientes": "Confirmar físicamente respuesta de bomba/ventilador y polaridadD9LOW. No asumir causalidad térmica por las lecturas anteriores38C. Servo tiene movimiento confirmado por usuario; puerta requiere extremo físico real para referencia antes de usar controles. No bloquear clima por referencia de puerta manual."
+  },
+  "ciclos_por_pin_restaurados_2026_11_04": {
+    "prioridad": "Último estado vigente. Usuario aclaró que SIEMPRE quería mover físicamente la señal del único sensor entre D2-D5 para seleccionar rangos. La selección software/fijaciónD5 introducida en versiones12/13 fue una interpretación incorrecta y se retiró.",
+    "firmware": "BROODER_14_PHYSICAL_CYCLES cargado y verificado COM6:12508flash/500RAM. Escanea D2/D3/D4/D5 cada2.5s; dos lecturas válidas consecutivas y un único sensor confirman ciclo1/2/3/4. Sin sensor o múltiples detectados: climaOFF. No se aceptan órdenes/API de selección software de ciclo.",
+    "rangos": {
+      "D2": "Ciclo1, días1-3,33-34C,60-70%HR",
+      "D3": "Ciclo2, días4-7,30-32C,50-65%HR",
+      "D4": "Ciclo3, días8-14,27-29C,50-60%HR",
+      "D5": "Ciclo4, días15-21,24-27C,50-60%HR"
+    },
+    "otros_pines": "D6servo180/130, D7bombaLOW, D8ventiladorLOW, D9calefacciónLOW (polaridad física pendienteconfirmación), A0alarmaHIGH, D10-D13motorpuerta manual con referencia. A1-A5 libres. No cambiar calefacción aD2: usuario se refería al sensor.",
+    "frontend": "Dashboard activo http://localhost:5173 y backend8000COM6; lanzador sesiónexec33796. Muestra ciclo/pin real y los4rangos conD2/D3/D4/D5 distintos; no botones para seleccionar ciclo bajo firmware14. Conserva controlesservo/relés/puerta. Añadido diagnóstico visible porpin y sensor_diagnosticsAPI; códigos0lecturaválida,1sinrespuesta,2/3bloqueo,4/5incompleto,6checksum,7rango,8pendiente.",
+    "comprobacion_real": "No se logró confirmar lecturaD2 tras carga. APIfirmware14, sensor_diagnostics{D2:1,D3:1,D4:1,D5:1,mask0}; ciclo0,okfalse,stoppedtrue, salidascalor/bomba/ventiladorOFF. Es ausencia de respuesta, no asumir sensoraveriado ni declarar ciclo1reconocido.",
+    "pendiente_usuario": "Pregunta enviada: confirmar DATA enD2de fila digital(noA2) y alimentación5V/GND. Usuario dijo haber cambiadoaD2 pero placa aún sinrespuesta enningunpin. Mantener diagnóstico y retomar comprobación cuando confirme conexión; no fingir lecturas ni borrarEEPROM/recargar repetidamente sin razón.",
+    "validacion": "41testsbackend completosOK antes de agregar diagnóstico;19tests telemetríaOK después(incluye nuevo diagnóstico y los4pines). ChromeWindowsfinalOK: cuatro etiquetas Ciclo1D2/Ciclo2D3/Ciclo3D4/Ciclo4D5, sin botones selecciónsoftware, diagnóstico visible sinrespuesta4pines, sinerroresJS ni desbordemóvil. Detección física del sensor continúa sin confirmar. PruebasC++ selección4ciclos/integraciónsketchOK. Frontendbuild/lintOK, py_compile/gitdiff--check/bash-nOK. No se enviaron órdenes de actuadores ni referencias de puerta en esta corrección."
+  },
+  "manual_y_puerta_corregidos_2026_11_04": {
+    "prioridad": "Último estado operativo, reemplaza BROODER12/puerta deshabilitada/manual bloqueado siempre por pausa. Usuario reportó D9,D7,D8 sin respuesta y pidió controles de puerta.",
+    "causa_comprobada": "API mostraba stoppedtrue, por lo que modo manualon antes quedaba bloqueado. Sensor inicialmente27C=max ciclo4 también bloqueaba calefacción. D9 aún configuradoHIGH a diferencia de bomba/ventiladorLOW.",
+    "firmware": "BROODER_13_MANUAL_DOOR cargado y verificado COM6:12440flash/495RAM. D5sensor, D6servo, D7bombaLOW, D8ventiladorLOW, D9calefacciónLOW, A0alarmaHIGH, D10-D13motorIN1-IN4. A1-A5 libres y D2-D4 sin función confirmada.",
+    "polaridad_D9": "Cambiada aLOW por consistencia con tipo de relés del montaje y reporte de no funcionamiento. No fue confirmada físicamente por usuario. Se observó38C con calefacción lógicamenteOFF antes y después de carga; no atribuir causalidad ni afirmar que la carga esté apagada físicamente. Se avisó desconectar potencia de calefacción mientras se confirma polaridad. No se realizó prueba física de encendido de calefacción por temperatura superior al límite.",
+    "manual": "Orden explícita manualon autoriza solo esa salida durante pausaauto; respeta sensor/ciclo válido y límites Tmáxima,HRmáxima,Tmínima. STOP cancela autorizaciones y detiene motores; expirar temporizador vuelveauto respetando pausa. BLOCKcodes0..5 reporta motivo acontrols.blocked_reason y UI muestraBloqueada en vez de sugerir activación.",
+    "puerta": "DOOR_ENABLEDtrue pero DOOR_AUTO_ENABLEDfalse, solo manual. Babrir/Dcerrar/Xdetener; O/Cregistrar extremo físico. Requiere referencia para mover, rechaza cambio mientras está andando, STOP cancela marcha sin reanudación espontánea. Referencia conserva EEPROM, movimiento marca inválida hasta extremo; sin finales de carrera,12vueltas estimadas. No se referenció ni movió puerta real durante esta sesión.",
+    "frontend": "Activo http://localhost:5173, backendWindows8000COM6, lanzador sesiónexec9020. Panel puerta con Abrir,Cerrar,Detener y Confirmarposiciónfísica con checkbox y botones Está totalmenteabierta/cerrada. Requiere confirmación explícita de usuario para registrar extremo, no falsear. Mostrar D7D8D9 relésLOW y confirmaciónpendienteD9.",
+    "api": "/api/device suma door_open/door_close/door_stop/door_reference_open/door_reference_closed. Referenciar exige confirmed_positiontrue. Abrir/cerrar se envía solo una vez sin reintentos de movimiento. Firmware13 reportaDOOR_CONTROL running/manual_only y BLOCKcodes; compatibilidad firmware12 conservada.",
+    "validacion": "39testsbackendOK; C++ sketch verifica manualenpausa, STOP, temporizador, límites y puerta simulada (sinreferencia/busy/avance/stop). Uno compile/uploadverifyOK. Frontendbuild/lintOK y gitdiff--checkOK. ChromeWindowsreal: D7manualon/ontrue con stoppedtrue y D8igual, apagados confirmados después; puerta sinreferencia rechazada409 sin mover; botones y vistaescritorio/mobile390 sin desborde ni erroresJS. Validación final sin nueva actuación:38C27%HR,ciclo4,manualauto,stoppedtrue,servoquieto,doorcontrolrunningfalse,referencedfalse.",
+    "pendiente_usuario": "Pregunta asíncrona sobre posición física de puerta y polaridadD9 sin respuesta al cerrar. Confirmar físicamente bomba/ventilador después de corrección y reléD9. Para habilitar Abrir/Cerrar debe registrar desde laUI un extremo real verificado; si puerta intermedia sinreferencia no mover por software hasta establecer extremo. No afirmar funcionamiento físico de esos actuadores por ACK."
+  },
+  "dashboard_integrado_2026_11_04": {
+    "prioridad": "Último estado vigente: dashboard integrado y activo por solicitud del usuario. Reemplaza estados anteriores de servicios detenidos o frontend sin controles del servo.",
+    "confirmacion_fisica": "Usuario confirmó: SI SE MOVIO, tras prueba Servo.write180/130 en D6. Movimiento físico del servo confirmado por usuario; no extrapolar a bomba/ventilador/calefacción ni puerta.",
+    "servicios": "Lanzador bash start.sh --dashboard --port COM6 activo. Frontend http://localhost:5173, backendWindows http://localhost:8000. Backend ocupa COM6; no abrir diagnósticos ni cargar mientras esté activo. Sesión exec63910, PIDbackendWindows30260 observado en arranque; verificar procesos antes de detener.",
+    "firmware": "BROODER_12_PIN_REMAP compile/upload--verify OK11264flash/446RAM. SensorD5, servoD6, bombaD7LOW, ventiladorD8LOW, calefacciónD9HIGH, alarmaA0HIGH; A1-A5 libres; motorD10-D13 IN1-IN4 deshabilitado. D2-D4 sin función confirmada, no se tocan.",
+    "nuevos_controles": "Panel Control del criadero: seleccionar ciclo1..4 con sensor fijoD5, ejecutar una sola secuencia servo180/10s+3s/130/9s/detach, estado/última orden/segundos restantes, Pausar y detener servo, Reanudar control. Controles existentes muestran MotobombaD7/VentiladorD8/CalefacciónD9/AlarmaA0, sin salidaintake.",
+    "api": "POST/api/device:actionservo_cycle/stop/resume/cycle y cycle1..4 solo para actioncycle. Registro antes de actuar y confirmación ACK+estado mediante lectorserieúnico. ServoZ se envía una sola vez, sin reintentos automáticos si faltaACK. Se ignora ERR FRAME sin correlación hasta recibir ACK o timeout; otros errores se rechazan. Se corrigió newline inicial en envíos.",
+    "telemetria": "FIRMWARE identifica mapa al consultar? sin requerir reset; CYCLE_REQUEST refleja ciclo solicitado; SERVOstage0..3/angle-1o130o180/remaining0..22. Estado servo caduca6s y reinicio lo borra.",
+    "validacion": "35testsbackendOK; C++ integración sketch verifica pines/LOW/servo/timers/STOP; build/lintfrontendOK; gitdiff--check y bash-nOK. ChromeWindows real: botón ciclo4 confirmado, lectura27C43%HR, botónservohabilitado, sin erroresJS; escritorio1440 y móvil390 sin desborde. Capturas/tmp/brooder_dashboard_desktop.png y _mobile.png. No se ordenó movimiento durante pruebaUI.",
+    "estado_final": "Ciclo4 seleccionado por botón web y confirmado con muestras realesD5. Arduino sigueSTOPstoppedtrue, servoRunningfalse, calefacción/bomba/ventiladorOFF. Modosauto tras última carga. Alarma supervisa humedadbaja según modoauto. Reanudar desde UI conserva los modos elegidos por salida. Arranque de placa vuelveSTOP y requiere seleccionar ciclo.",
+    "pendientes": "Puerta sigue deshabilitada: falta posición física antes de referenciar/mover. Precisar funcionesD2-D4 y confirmar propósito automático bomba/ventilador. Servo se ejecuta solo bajo orden; no vinculado automáticamente a ciclo de clima ni a bomba."
+  },
+  "correccion_servo_reles_2026_11_04": {
+    "prioridad": "Última carga y prueba real; reemplaza pulsos breves de servo y polaridad HIGH anterior de bomba/ventilador.",
+    "usuario": "Reportó servo sin movimiento; proporcionó ejemplo Servo.write180/130 y relés de bomba y ventilador activosLOW. Pines del ejemplo4/3/2 eran referencia; se mantienen cableado acordadoD6/D8/D7.",
+    "firmware": "BROODER_12_PIN_REMAP cargado y verificado COM6:10932flash/444RAM. Servo D6, bombaD7LOW, ventiladorD8LOW, sensorD5, calefacciónD9HIGH (polaridad no confirmada por ejemplo), alarmaA0HIGH. A1-A5 libres. PuertaD10-D13 deshabilitada.",
+    "servo": "OrdenZ hace un solo ciclo no bloqueante:write180,10s; espera3s manteniendo180;write130,9s;detach. S cancela en cualquier etapa. No activa bomba ni ventilador durante el ciclo de servo; salidas se prueban por separado.",
+    "prueba_real": "READY recibido; SENSOR D5 diagnóstico0 y TEMP26..27 HUM45. OK SERVO TEST, SERVO ANGLE180, SERVO WAIT180, SERVO ANGLE130, OK SERVO DONE. Arduino confirmó bomba outputs01000 y ventilador00100 con polaridadLOW. Alarma00001. Calefacción solicitada pero outputs00000 al estar27C=máximo ciclo4: protección correctamente impidió encender. La prueba anterior a26C sí confirmó activaciónD9.",
+    "limite": "No hay confirmación visual de movimiento servo ni funcionamiento físico de actuadores. No afirmar que ACK demuestra movimiento. Puerta no probada; falta posición física y funcionesD2-D4.",
+    "estado_final": "STOPstopped1, CONTROLmodes11101 outputs00000 door_enabled0; servo detach, bomba/ventilador HIGH apagados, calefacciónLOW, alarmaLOW por modooff aunque alerta lógicaactiva porHR45. Puerto cerrado.",
+    "validacion": "C++ sketch prueba ángulos exactos, tiempos mínimos, cancelación en3etapas, paso de reloj y relésLOW:OK. Backend15tests telemetríaOK; diagnóstico py_compileOK.",
+    "evidencia": "iot/diagnostics/brooder_validation_latest.json sobrescrito con esta última ejecución; falta observación física usuario."
+  },
+  "adaptacion_en_curso_2026_11_04": {
+    "ultima_confirmacion_usuario": "Sensor DHT11 conectado físicamente en D5; A0 alarma y A1-A5 libres. Fuente y app ajustadas a D5; no confundir con las asignaciones históricas de A1.",
+    "prioridad": "Último estado: BROODER_12_PIN_REMAP cargado y verificado COM6 por autorización del usuario de hacer funcionar y probar todo.",
+    "firmware": "BROODER_12_PIN_REMAP: sensor D5, calefacción D9, motobomba D7, ventilador D8, motor D10-D13 IN1-IN4. A1-A5 sin uso. Canal intake retirado, salida0 y mandos rechazados.",
+    "protecciones": "Arranque STOP; puerta DOOR_ENABLED=false, sin referencia física confirmada. D2-D4 no se tocan. D6 servo con prueba Z:1600us100ms/neutro3s/1200us100ms/neutro300ms/detach. S cancela servo y desenergiza motor. Ciclo explícito serie1..4 no persistente; dos muestras válidas D5. Cambiar ciclo bloquea hasta confirmar muestras.",
+    "app": "Parser admite BROODER_12 y conserva compatibilidad con anteriores; muestra mapa según firmware reportado, oculta intake retirado. Selección provisional de ciclo por serie, todavía sin control UI.",
+    "validacion": "Carga --verify OK10638flash/444RAM; librería Servo desde LOCALAPPDATA/Arduino15/libraries. Prueba C++ sketch con GPIO simulados incluye secuencia servo y cancelación STOP:OK. Validaciones backend y frontend anteriores OK.",
+    "hardware": "COM6 real: DHT11 D5 repetidas lecturas26C/46%HR. Ciclo4 confirmado pin5. Z recibió OK SERVO TEST y OK SERVO DONE. Mandos manuales alarmaA0/calefacciónD9/bombaD7/ventiladorD8 recibidos con CONTROL outputs00001/10000/01000/00100 respectivamente. Esto confirma firmware y telemetría, no movimiento/calor/sonido físicos. Puerta no movida ni referenciada.",
+    "pendiente_usuario": "Confirmar observación física de servo/alarma/calefacción/bomba/ventilador y posición actual de puerta. Precisar D2-D4 y función/recorrido servo, regla de bomba y sentido de ventilador para control automático completo. Pregunta enviada durante prueba.",
+    "documentacion": "iot/firmware/brooder/PIN_REMAP_2026_11_04.md",
+    "estado_final": "STOP confirmado stopped=1, CONTROL modes11101 outputs00000 door_enabled0. Todas las cargas y alarma manualmente apagadas; servo detach; puerto cerrado. No dejar automático activo sin confirmar montaje. Reiniciar conserva arranque STOP, modos manuales vuelvenauto.",
+    "evidencia": "iot/diagnostics/brooder_validation_latest.json; ejecutor iot/diagnostics/validate_brooder.py --port COM6 --actuate con PythonWindows. No repetir movimientos sin aviso previo."
+  },
+  "distribucion_acordada_2026_11_04": {
+    "prioridad": "Última distribución de cableado acordada con el usuario; reemplaza los mapas anteriores para la próxima adaptación del criadero. No describe el firmware actualmente cargado.",
+    "estado": "Usuario confirma todos los D conectados y A4/A5 libres. Solo se documenta: no modificar ni cargar código todavía.",
+    "pines": {
+      "D2-D4": "Usuario indica conectados; función pendiente de precisar. Ya no asignar aquí el DHT11 ni asumir selección de ciclos por estos pines.",
+      "D6": "Señal de servomotor",
+      "D7": "Señal de motobomba",
+      "D8": "Señal de ventilador",
+      "D9": "Señal de calefacción (control digital)",
+      "D10": "ULN2003 IN1, motor de puerta",
+      "D11": "ULN2003 IN2, motor de puerta",
+      "D12": "ULN2003 IN3, motor de puerta",
+      "D13": "ULN2003 IN4, motor de puerta",
+      "A0": "Alarma",
+      "D5": "Señal de sensor de temperatura/humedad DHT11 (protocolo digital)",
+      "A1-A5": "Libres; A4/A5 ya no asignados a extracción/entrada"
+    },
+    "pendiente": "Precisar funciones de D2-D4 y selección de ciclos antes de adaptar firmware. No se realizaron pruebas físicas ni cambios de firmware en esta actualización."
+  },
+  "servo_d3_2026_11_03": {
+    "prioridad": "Estado más reciente del Arduino COM3; reemplaza SG90_CONTINUOUS_3.",
+    "firmware": "iot/firmware/servo_d3/servo_d3.ino, código del usuario con attach(3). Compilado, cargado y verificado COM3: 2048 bytes flash, 50 RAM.",
+    "secuencia": "Bucle automático: write(180), espera10000ms; write(130), espera3000ms. Se repite mientras esté alimentado. No acepta TURN ni STOP por serie.",
+    "cableado": "Señal D3; usuario debe mover cable desde D2. Movimiento físico pendiente de observación.",
+    "cargador": "iot/host/upload_servo_d3.ps1"
+  },
+  "prueba_sg90_2026_11_02": {
+    "fecha": "2026-11-02",
+    "prioridad": "Operación más reciente sobre COM3. Los estados anteriores del criadero no describen el firmware actual de esta placa.",
+    "montaje": "Usuario confirmó SG90: anaranjado D2, rojo 5V, marrón GND y actuadores del criadero desconectados.",
+    "firmware": "SG90_CONTINUOUS_3 cargado y verificado en COM3:4762 flash/296 RAM. TURN R/L20..1000ms para giro único; CYCLE conserva pausa y reversa. No escribe EEPROM.",
+    "orden": "Última secuencia repetida tras usuario reportar cable desconectado: check_sg90.py --port COM3 --cycle --pulse-ms 200. Derecha1600us/200ms, neutro1500us/3s, izquierda1200us/200ms, neutro300ms y detach. Inversa se cambió de1400 a1200 en firmware tras intentos sin giro. ACK FORWARD/WAIT/REVERSE/NEUTRAL/DONE/STOP recibidos.",
+    "limite": "Tipo posicional/continuo aún no confirmado: hubo reporte de vuelta360 y pruebas sin retorno, pero luego cable desconectado. Usuario quiere grados, espera3s y retorno; control actual es por pulsos/tiempo y no garantiza ángulos. Calibración derecha aproximada anterior200ms/90 grados debe revisarse con conexión confirmada. Izquierda sin calibrar.",
+    "estado": "Usuario reportó que un cable no estaba conectado y pidió repetir; repetición completada por protocolo. Pendiente observación física con cable reconectado. Ausencia de giro en pruebas anteriores puede depender de esa conexión; no diagnosticar modelo/avería por ellas. Servo liberado, puerto cerrado.",
+    "ejecutor": "bash servo.sh derecha 45 (calibrado aproximadamente). Izquierda aún sin calibrar. Archivo iot/diagnostics/sg90_calibracion.json conserva factor por sentido y último pulso. --calibrar usa el ángulo observado del último pulso y no mueve. No confundir tiempo calibrado visualmente con medición angular exacta.",
+    "validacion": "C++ pruebas de ciclo y TURN único sin retorno, STOP, límites y rollover OK; Python compila y bash -n OK; carga Arduino verificada y giro único confirmado por protocolo, no por medición angular."
+  },
+  "version": 3,
+  "estado_al_cerrar": {
+    "fecha_utc": "2026-11-01T13:05:09Z",
+    "solicitud": "PARAR TODO y guardar contexto",
+    "prioridad": "Estado mas reciente; reemplaza referencias anteriores a servicios activos.",
+    "servidores": "Se detuvo start.sh del criadero (backend8000 y frontend5173); no reiniciar sin solicitud del usuario.",
+    "arduino": {
+      "hardware_confirmed": true,
+      "stopped": true,
+      "controls": {
+        "heater": {
+          "mode": "auto",
+          "on": false,
+          "remaining_seconds": 0
+        },
+        "humidifier": {
+          "mode": "auto",
+          "on": false,
+          "remaining_seconds": 0
+        },
+        "exhaust": {
+          "mode": "auto",
+          "on": false,
+          "remaining_seconds": 0
+        },
+        "intake": {
+          "mode": "auto",
+          "on": false,
+          "remaining_seconds": 0
+        },
+        "alarm": {
+          "mode": "off",
+          "on": false,
+          "remaining_seconds": 0
+        }
+      },
+      "door_enabled": false,
+      "temperature": 22,
+      "humidity": 60,
+      "cycle": 4
+    },
+    "persistencia": "STOP y modo manual de alarma son volatiles; reiniciar/alimentar nuevamente Arduino restaura automatico.",
+    "reanudacion": "Solo si el usuario lo solicita: comprobar COM6 y lecturas; restaurar alarma a auto y liberar STOP de forma explicita. No mover puerta ni borrar EEPROM.",
+    "trabajo_completado": "Firmware BROODER_11_HEAT_LIMIT; calefaccion max-1/max y espera60s; manual1..1440min o indefinido; historial CSV persistente, configuraciones versionadas, auditoria y paginacion25.",
+    "datos": "backend/data/{readings,events,configurations}.csv y software/*.json; indice SQLite Windows LOCALAPPDATA/camera-brooder/events.sqlite3. Conservar ambos. No SQLite directamente en ruta WSL compartida.",
+    "validacion": "27 pruebas backend y build/lint; navegador real CSV/JSON/paginacion/movil. Sin commit de los cambios. El backend detenido deja de registrar."
+  },
+  "vigente_2026_11_01_calefaccion_historial": {
+    "prioridad": "Reemplaza las reglas anteriores de calefaccion centrada y temporizador manual fijo60s.",
+    "firmware": "BROODER_11_HEAT_LIMIT en COM6; 9588 flash/398 RAM. Puerta sigue deshabilitada.",
+    "calefaccion": "ON<=maximo-1 grado; OFF>=maximo. Ciclos1..4:33/34,31/32,28/29,26/27. Espera60s para reencender; maximo/fallo cortan inmediato. Ventilacion por temperatura coordinada con estos bordes.",
+    "manual": "Duracion elegida por salida1..1440min o hasta pulsarAutomatico. API duration_seconds0..86400;0 sin temporizador. Reiniciar placa vuelveauto. Protecciones siguen activas. Cuenta regresiva confirmada por firmware.",
+    "historial": "CSV automaticos backend/data/events.csv y readings.csv. SQLite indice transaccional Windows LOCALAPPDATA/camera-brooder/events.sqlite3 conservado: no mover SQLite a ruta compartida WSL porque bloqueo Windows impide arrancar. CSV append+fsync tras cada lote; reconstruccion atomica al reiniciar desde SQLite. Tabla events cambios y mandos; readings cada telemetria numerica incluso repetida. GET /api/events pagina25 max100, kind y snapshot_id estables. /api/history/readings.csv y /api/history/events.csv?kind=all descargas completas por lotes500. UTC/epoch, 1/0 (o1.0/0.0), vacio desconocido, modos auto/off/on. Solo registra con backend activo; navegador puede cerrarse.",
+    "validacion": "C++ cuatro ciclos/limites/espera/fallos/temporizador variable/indefinido;15 tests backend;build/lint. Verificacion fisica de potencia y sensor sigue independiente del estado software.",
+    "validacion_historial_csv": "19 tests backend; build/lint; Playwright navegador real: 50 eventos previos preservados, paginas25 sin repetidos, filtro output, descargas reales ambos CSV, movil390px sin desborde. API activa COM6 D5 ciclo4,25C57%HR al verificar. Puerta deshabilitada y modos auto; no se enviaron mandos durante esta validacion.",
+    "auditoria_configuracion": "Config_id/session_id en lecturas y eventos nuevos; tabla configurations y CSV backend/data/configurations.csv, fuentes completas versionadas backend/data/software/<hash>.json. Perfil/ciclo/rangos/umbrales/modos/pines/puerta y ultima solicitud manual confirmada con duracion/request_id. Firmware esperado desde fuente; reported solo READY, no asumir binario confirmado. Fuentes se capturan al iniciar backend. GET /api/configurations/{id} JSON con fuentes; export configurations.csv. Mandos requested/confirmed/rejected/unconfirmed con antes/despues/motivo/HTTP. Solicitud persistida antes de enviar; registro ausente503 noactua. STOP y reinicio monitor registrados. Columnas dentro/fuera rango y desviacioncentro para analisis, no causalidad inferida. Datos previos desconocidos quedan vacios. Misma configuracion puede reutilizar id; separar periodos por eventos y sesion.",
+    "validacion_auditoria": "27 tests backend OK (incluye API con dispositivo simulado sin abrir puerto), build/lint OK. Navegador real descargo configuracionesCSV y detalleJSON ~90KB con fuentes; tabla25 y movil390 sin desborde. CSV618 lecturas totales en verificacion,24 nuevas vinculadas a configuracion1; ejemplo23C58%HR ciclo4, T fuera de rango0 HR dentro1. Ninguna orden enviada al hardware durante pruebas reales."
+  },
+  "ultima_operacion_2026_11_01": {
+    "solicitud": "Usuario solicito borrar memoria y recargar porque volvio a perderse el sensor.",
+    "resultado": "COM6: EEPROM completa 1024 bytes borrada a 0xFF y verificada. Firmware BROODER_10_MANUAL con diagnostico recompilado --clean en directorio nuevo, cargado y verificado. No se borro bootloader. Referencias EEPROM anteriores eliminadas por solicitud explicita.",
+    "sensor": "Despues del borrado sigue sin respuesta inicial en D2/D3/D4/D5 (diagnostico1, mask0). No asumir que recargar recupero el sensor ni diagnosticar placa averiada sin mediciones. Antes COM6 habia leido 23C/51%HR en D5.",
+    "puerta": "Sigue deshabilitada; no referenciar ni mover automaticamente.",
+    "dashboard": "COM6, http://localhost:5173; mantener las protecciones ante sensor ausente."
+  },
+  "estado_vigente_control_manual": {
+    "prioridad": "Este bloque reemplaza los estados historicos inferiores sobre firmware, puerta y salidas.",
+    "firmware": "2026-11-01: BROODER_10_MANUAL con diagnostico SENSOR cargado y verificado en Arduino NUEVO COM6, 9036 bytes flash/366 RAM. Usuario reemplazo la placa y replico cableado. Sensor detectado realmente D5 (ciclo4), seis lecturas consecutivas 23C/51%HR; D4 sin respuesta. No atribuir definitivamente el fallo anterior al Arduino sin prueba electrica.",
+    "puerta": "D8-D11 deshabilitados por ahora, todas las bobinas LOW. Referencia EEPROM conservada. No ordenar movimientos ni referenciar automaticamente.",
+    "pines": "A0 alarma, A2 calefaccion, D7 humedad, A4 extraccion, A5 entrada; A1/A3 libres; sensor unico D2-D5 selecciona ciclo.",
+    "manual": "Dashboard controla cada salida con Encender/Apagar/Automatico. Manual dura60s y vuelveauto. Reinicio vuelveauto. Fallo/STOP bloquean calor y aire. T maxima corta calor, HR maxima corta humedad, T minima corta A4/A5. Alarma logica sigue supervisando durante prueba/silencio manual.",
+    "protocolo": "CONTROL modes=00000 outputs=00000 door_enabled=0, orden heater/humidifier/exhaust/intake/alarm. POST /api/control manda tramas con checksum desde lector unico, hasta3 intentos, exige ACK y estado. No confirma movimiento fisico.",
+    "verificado": "13 pruebas backend; C++ caducidad/protecciones/modos y rollover; build/lint OK. Navegador real apago/encendio/restauroauto D7 con confirmacion Arduino; escritorio/movil sin errores ni desborde. Puerta deshabilitada confirmada. D7 dejado automatico.",
+    "dashboard": "http://localhost:5173; backend Windows :8000 COM6 activo. .env local fija ARDUINO_PORT=COM6 para siguientes arranques. La referencia EEPROM de la placa anterior no se transfirio; puerta sigue deshabilitada.",
+    "documentacion": "iot/firmware/brooder/MANUAL_CONTROL.md"
+  },
+  "actualizado": "2026-11-04",
   "idioma": "es",
   "proposito": "Memoria de continuidad para retomar rápidamente este proyecto. Leer primero este archivo y después consultar solo los archivos relevantes para la siguiente tarea.",
-  "resumen": "Integración local de cámara USB, detección de rostros con expresión facial, detección de personas, control de un servo SG90, control de una luz por relé y un sensor DHT11 (temperatura/humedad), todo sobre un Arduino Uno. El código está en Ubuntu WSL; el acceso USB y la inferencia se ejecutan en Windows. Además hay un dashboard web (backend FastAPI + frontend React) que muestra la temperatura y humedad en vivo, reutilizando el mismo controlador serie que el resto del proyecto. El 2026-09-22 se reorganizó todo por áreas (iot/, ai/comp_vision/, docs/, backend/, frontend/) reemplazando las carpetas arduino/ y perip/ de nivel superior; ya está commiteado (f9245ed). El lanzador start.sh y el dashboard están probados de extremo a extremo con hardware real. Quedan cinco incidencias abiertas, la principal es que el sensor de sonido de D4 no entrega señal.",
+  "resumen": "BROODER_9_THREE_AIR cargado y verificado en Arduino COM3, sin LCD. D7 humidifica/recircula sobre agua, A4 extrae aire y A5 ingresa aire; A4/A5 trabajan juntos por calor o exceso de HR y se bloquean por frio. D7 actua por HR baja; A3 queda libre. A2 calefaccion, A0 alarma, D2-D5 seleccion de ciclo y D8-D11 puerta. Firmware 9260 bytes flash/357 RAM; pruebas C++/backend y build/lint frontend OK. Dashboard activo http://localhost:5173. Telemetria real: ciclo4 por D5, 24C/49%HR, D7 humidificador ON, A4/A5 OFF y calefaccion ON. Cambios sin commit.",
+  "cambio_2026_10_31_tres_aires": {
+    "pines": "D7 ventilador sobre agua para elevar HR; A4 extraccion; A5 entrada de aire. A3 queda libre.",
+    "control": "D7 ON<=centroHR-2 y OFF>=centroHR. A4/A5 ON por T>=borde superior o HR>=centro+2; OFF al volver a centros. A4/A5 bloqueados por T<=minimo. Permanencia 15s; limites, fallo y STOP tienen prioridad.",
+    "telemetria": "CYCLE informa humidifier, exhaust, intake y reason; backend y frontend muestran las tres salidas por separado.",
+    "verificacion": "C++ OK, 11 tests backend OK, frontend build/lint OK, Arduino compile OK 9260 flash/357 RAM.",
+    "carga": "Cargado con verificacion en COM3 despues de mover solo humedad de A3 a D7. API confirma ciclo4/D5, humidifier=1, exhaust=0, intake=0, 24C y 49%HR. Referencia de puerta no fue modificada."
+  },
+  "cambio_2026_10_31_sin_lcd": {
+    "decision": "LCD retirado temporalmente del proyecto principal por solicitud del usuario.",
+    "firmware": "Eliminados controlador, inicializacion, reconexion y telemetria LCD. A4/A5 quedan libres. Fuente compila; no se cargo porque la placa principal COM3 no estaba conectada y COM6 corresponde a la prueba dedicada del LCD.",
+    "backend": "El parser ya no acepta ni publica el objeto lcd; 11 pruebas pasan.",
+    "frontend": "Panel y estilos LCD eliminados; build y lint pasan.",
+    "diagnostico_aislado": "Se conservan iot/firmware/lcd_test, lcd_fixed_test, check_lcd.py y upload_lcd_test.ps1 para una futura prueba separada; no forman parte del firmware del criadero."
+  },
   "rutas": {
     "proyecto": "/home/tucu/yo/person-tracking-camera-system",
     "readme_principal": "/home/tucu/yo/person-tracking-camera-system/README.md",
@@ -18,7 +248,7 @@
     "reorganizacion_2026_09_22": "arduino/ y perip/ ya no existen como carpetas de nivel superior. Todo el hardware vive en iot/ (firmware/, firmware-tests/, host/, diagnostics/, tracking/). Los modelos de visión se movieron a ai/comp_vision/ (emotion-detector/, human-detector/). El diagrama y BOM están en docs/ (antes digram/). Se agregaron backend/ (FastAPI) y frontend/ (React) para un dashboard de temperatura/humedad en vivo. Ya commiteado en f9245ed; no repetir el movimiento de archivos."
   },
   "objetivo_del_usuario": {
-    "actual": "Integración del criadero con DHT11 en A1, alarma A0, foquito/calefacción A2 y puerta con 28BYJ-48. Ver criadero_aves; el firmware activo ya no es servo_usb.",
+    "actual": "Cuatro ciclos manuales D2-D5 con rangos del usuario, humidificacion D7 y calefaccion A2 alrededor del centro, alarma sin avisos continuos. Implementado, compilado y cargado. Falta conectar señal del unico DHT11 a un pin D2-D5 para verificar lectura real; no volver a A1.",
     "producto_futuro": "Varias cámaras conectadas por cable, cada una movida por servomotores, detectarán personas y orientarán la cámara para mantener el seguimiento visual.",
     "nombre": "person-tracking-camera-system",
     "descripcion": "Sistema de cámaras conectadas por cable que utiliza visión artificial y servomotores para detectar y seguir personas automáticamente.",
@@ -29,12 +259,12 @@
     "HUMAN_DETECTION.md": "Detección de personas con MobileNet-SSD, opciones del lanzador y procedencia del clon.",
     "LIGHT_CONTROL.md": "Luz por presencia y sonido: cableado D3/D4, gesto de palmadas, protocolo serie y pruebas.",
     "CONTEXTO_PROYECTO.json": "Este archivo.",
-    "start.sh": "Lanzador WSL ejecutable desde cualquier directorio. Lee .env opcional, detecta Python Windows 3.12, prepara el entorno de IA, verifica versiones y pip check, prepara/activa el entorno Linux y ejecuta tracking.py. Admite --check, --setup-only y --list. Usa flock para evitar duplicar este lanzador.",
+    "start.sh": "Lanzador original de cámara y modo --dashboard adaptado a criadero. No ejecutar modo cámara con BROODER_3.",
     ".env.example": "Plantilla opcional de CAMERA_NAME, ARDUINO_PORT, CAMERA_REVERSE, ARDUINO_WINDOWS_PYTHON y CAMERA_AI_PYTHON. No contiene credenciales.",
     ".gitignore": "Excluye .env.",
     "docs/": "Esquema PDF, imagen del circuito visual_circuito.png y lista de materiales bom.csv. Antes digram/.",
     "iot/README.md": "Documentación detallada de todo iot/: mapa de pines, protocolo serie, archivo por archivo de cada subcarpeta, y cómo el backend consume iot/host/serial_bridge.py en tiempo real.",
-    "iot/firmware/servo_usb/servo_usb.ino": "Firmware activo: setup/loop y el parser de comandos PING, SET, STOP, LIGHT..., SOUND..., TEMP READ. Instancia las clases de pins.h/servo_control.h/relay_light.h/sound_sensor.h/dht11_sensor.h.",
+    "iot/firmware/servo_usb/servo_usb.ino": "Firmware HISTORICO alternativo de camara/servo/luz; no cargado.",
     "iot/firmware/servo_usb/pins.h": "Mapa único de pines: D2 servo, D3 relé, D4 sonido, D5 DHT11. D0/D1 reservados por Serial.",
     "iot/firmware/servo_usb/servo_control.h": "Clase ServoControl: attach/write/detach del servo D2.",
     "iot/firmware/servo_usb/relay_light.h": "Clase LightControl: temporizador de encendido del relé D3 (antes en light_control.h).",
@@ -63,52 +293,65 @@
     "ai/comp_vision/emotion-detector/requirements-windows.txt": "Versiones de dependencias de la integración; lo verifica start.sh.",
     "ai/comp_vision/emotion-detector/face_detector/": "deploy.prototxt y res10_300x300_ssd_iter_140000.caffemodel.",
     "ai/comp_vision/emotion-detector/model/": "67emotion_human.json y 67emotion_human.h5, reutilizados sin reentrenar.",
-    "backend/main.py": "FastAPI que importa USB de iot/host/serial_bridge.py, sondea TEMP READ cada 2.5 s en un hilo aparte y expone GET /api/temperature, GET /api/temperature/history y WS /ws/temperature. Corre con el Python de Windows.",
+    "backend/main.py": "API FastAPI del criadero, escucha serie pasiva, reintenta reconexión y distribuye REST/WebSocket.",
     "backend/run.ps1": "Levanta uvicorn desde WSL vía el puente a PowerShell, igual que iot/host/upload.ps1.",
-    "frontend/": "Dashboard React (Vite): tarjetas de temperatura/humedad con sparkline SVG, WebSocket con reconexión automática. Sirve desde WSL en localhost:5173."
+    "frontend/": "Dashboard del criadero adaptado para escritorio/móvil, datos actuales y estados explícitos.",
+    "iot/firmware/brooder/": "Firmware activo BROODER_7_CYCLES; config/control/cycles/alarm_policy/door/lcd/dht/protocol.",
+    "iot/firmware/stepper_test/": "Prueba independiente del 28BYJ-48; no activa.",
+    "iot/diagnostics/start_brooder.py": "Solo puerta físicamente ABIERTA. S/O/A; verifica umbral maximo del ciclo informado, no32 fijo.",
+    "iot/diagnostics/stop_brooder.py": "STOP verificado incluye heater0 y CYCLE fan0; alarma permanece supervisando.",
+    "iot/host/upload_brooder.ps1": "Compila/carga los archivos brooder mediante Arduino CLI Windows. -Port COM3 o -CompileOnly.",
+    "iot/host/upload_stepper.ps1": "Compila/carga prueba independiente stepper.",
+    "backend/brooder_stream.py": "Valida TEMP/CYCLE/ALERT/LCD/STATE, perfiles/centros y caducidad independiente.",
+    "backend/test_brooder_stream.py": "Tres tests de parser/fallos/caducidad/puerta.",
+    "iot/firmware/brooder/lcd_display.h": "LCD1602A I2C por software SDA A4 / SCL A5, deteccion mapa/polaridad, prueba DDRAM y reconexion con motor parado.",
+    "iot/firmware/brooder/cycles.h": "Perfiles D2-D5 y selector de unico sensor con dos lecturas consecutivas.",
+    "iot/firmware/brooder/alarm_policy.h": "Confirmacion30s/10s, recuperacion15s y pulso1s por60s."
   },
   "hardware": {
-    "placa": "Arduino Uno",
-    "servo": "SG90 posicional",
-    "senal_servo": "D2",
-    "rele_luz": "D3, activo en HIGH, señal de control de un módulo relé",
-    "sensor_sonido": "D4, salida digital DO del módulo, leído con INPUT_PULLUP",
-    "sensor_temperatura_humedad": "DHT11 de tres pines en D5, protocolo de un solo cable escrito a mano (iot/firmware/servo_usb/dht11_sensor.h). D0 (RX) y D2 (servo) se descartaron por chocar con pines ya usados.",
-    "alimentacion_documentada": "5V y GND según el montaje existente",
-    "puerto": "Variable entre sesiones (fue COM3, luego COM6 el 2026-09-22). Verificar siempre antes de usar.",
+    "placa": "Arduino Uno, último puerto verificado COM3; puede cambiar",
+    "usb_id_observado": "VID_2341 PID_0043; identificador observado 950363034353517141A0",
+    "firmware_activo": "iot/firmware/brooder/brooder.ino (READY BROODER_7_CYCLES)",
+    "motor": "28BYJ-48, 5 VDC, inscripción 15031801; motor paso a paso con reductora, no servo SG90",
+    "driver": "Entradas IN1->D8, IN2->D9, IN3->D10, IN4->D11, secuencia tipo ULN2003",
+    "A0": "Salida digital HIGH en pulsos1s cada60s tras confirmar alarma. Tipo/sonido físico del buzzer pendiente.",
+    "A1": "Libre/no utilizado. El sensor ya no se lee en A1.",
+    "A2": "Salida digital activa HIGH; foquito actual representa calefacción. Al sustituir por relé verificar polaridad/capacidad.",
+    "D0_D1": "Reservados por Serial",
     "baudios": 115200,
-    "camara_objetivo": "USB 2.0 CAMERA",
-    "camaras_disponibles_2026_09_14": [
-      "0: HP HD Camera",
-      "1: Camo"
-    ],
-    "resolucion_probada": "640x480",
-    "seguridad": "La tensión de red nunca se conecta a D3, D4 ni a la protoboard. El montaje de corriente alterna debe estar aislado y encerrado.",
-    "nota": "Seleccionar la cámara por nombre; el índice y el puerto deben verificarse si cambian las conexiones. No asumir que un OK serie o las luces RX/TX/L confirman giro físico ni encendido del foco."
+    "puerta": "Recorrido autorizado 12 vueltas a 6 RPM, 49152 medios pasos, unos 2 minutos. Sin finales de carrera declarados.",
+    "hardware_anterior": "Ver historico_camara_hardware. El firmware de criadero no controla SG90 D2, relé D3 ni sonido D4.",
+    "lcd": "LCD1602A, SDA A4 y SCL A5 (usuario movio ambos cables el 2026-10-30). D7/D6 historicos; firmware/dashboard actualizados.",
+    "D2_D5": "Señal de UNICO DHT11; D2 ciclo1, D3 ciclo2, D4 ciclo3, D5 ciclo4. Dos lecturas consecutivas confirman etapa.",
+    "D7": "Salida digital HIGH al controlador del ventilador humidificador; el usuario confirma que aporta humedad. No alimentar motor desde pin."
   },
   "comportamiento_actual": {
-    "objetivo": "Rostro de mayor área; si no hay rostros, persona de mayor área. Sin identidad persistente entre fotogramas.",
-    "angulo": "Posición horizontal absoluta: izquierda 0, centro 45, derecha 90 grados.",
-    "estabilidad": "Tres detecciones consecutivas; cambios de hasta 5 grados separados al menos 150 ms; evita ajustes inferiores a 3 grados mientras está activo.",
-    "perdida": "STOP y liberación si no se detecta el objetivo durante un segundo.",
-    "luz": "Cada detección envía LIGHT PERSON cada 0.5 s. El Arduino mantiene el relé 30 s desde la última señal, de forma autónoma. Una palmada enciende; tres palmadas seguidas apagan salvo que la cámara siga viendo presencia en los últimos 1.5 s.",
-    "controles": "Espacio pausa/reanuda el servo. Q, Esc o cerrar ventana terminan. Ctrl+C solicita la parada desde WSL.",
-    "expresiones": "Etiqueta estimada entre angry, disgust, fear, happy, neutral, sad y surprise. No representa una medición del estado emocional y no gobierna el movimiento.",
-    "ejecucion": "Aplicación de escritorio en primer plano; no es un servicio systemd, HTTP ni un arranque automático al encender Windows."
+    "fuente": "BROODER_7_CYCLES",
+    "parada_actual": "AUTO, pero sin sensor/ciclo confirmado: calefaccion y humidificacion OFF, motor detenido. No confundir ausencia de ciclo con STOP.",
+    "ciclos": "D2 dias1-3 33-34C/60-70%; D3 dias4-7 30-32C/50-65%; D4 dias8-14 27-29C/50-60%; D5 dias15-21 24-27C/50-60%. Manual por cable; no calcula edad/fecha.",
+    "calefaccion": "Centro T 33.5/31/28/25.5. ON<=centro-margen, OFF>=centro+margen; margen0.25C ciclo1,0.5 resto. Permanencia10s; maximo/fallo/STOP cortan inmediatamente.",
+    "humidificacion": "Centro HR65/57.5/55/55. D7 ON<=centro-2, OFF>=centro+2. Permanencia15s; maximo/fallo/STOP cortan inmediatamente.",
+    "alarma": "30s continuos fuera de rangos;10s sensor/ciclo/puerta desconocida. Pulso1s/60s con condicion presente.15s estable para borrar; durante recuperacion ya no suena. Bits reasons1/2 temp,4/8HR,16sensor,32puerta.",
+    "puerta": "Cierra T<=maximo del ciclo. Abre >5min continuos sobremaximo. Reinicio temporizador ante cambio ciclo/fallo/STOP. Referencia EEPROM sin alteracion.",
+    "limites": "DHT11 reporta enteros: no prometer precision en centro. Sin medicion fisica de salida/calefaccion/humidificacion; LCD aun sin verificar visualmente."
   },
   "dashboard_temperatura": {
-    "que_es": "Dashboard web de temperatura/humedad en vivo, separado de tracking.py. No se abren ambos a la vez contra el mismo Arduino: el que tenga el puerto COM abierto bloquea al otro.",
-    "backend": "backend/main.py, FastAPI corriendo con el Python de Windows (necesita abrir el puerto COM). Importa USB de iot/host/serial_bridge.py. Arranque: backend/run.ps1 -Port <COMx>, invocado desde WSL vía el puente a PowerShell.",
-    "sondeo": "Cada 2.5 s (POLL_SECONDS en backend/main.py) en un hilo aparte (run_in_executor), porque pyserial bloquea y no se puede llamar directo desde el loop de asyncio.",
-    "endpoints": {
-      "GET /api/temperature": "Última lectura: {ok, temperature, humidity, timestamp} o {ok:false} si el sensor no respondió.",
-      "GET /api/temperature/history": "Últimas 120 lecturas (HISTORY_SIZE, ~5 minutos) en memoria, se pierden al reiniciar el backend.",
-      "WS /ws/temperature": "Push de cada lectura nueva a todos los clientes conectados."
-    },
-    "puertos_red": "Backend en localhost:8000 (Windows), frontend en localhost:5173 (WSL, con npm run dev -- --host). Ambos accesibles desde un navegador de Windows por localhost normal.",
-    "frontend": "frontend/ (React + Vite). App.jsx se conecta por WebSocket con reintento automático cada 2 s si falla; hace fetch inicial de /api/temperature/history para precargar el sparkline SVG (sin librerías de gráficos externas).",
-    "limitacion_red_wsl": "curl desde dentro de WSL hacia localhost:8000 (servicio de Windows) puede dar 'Connection refused' por cómo WSL2 reenvía puertos en esa dirección; hay que usar la IP del gateway (ip route | awk '/^default/ {print $3}') para probarlo desde una terminal de WSL. Un navegador nativo de Windows no tiene ese problema.",
-    "verificado": "2026-09-22: REST y WebSocket devolviendo datos reales del DHT11 (23°C, 47-48% humedad) en varias rondas de prueba, incluyendo después de la reorganización de carpetas. Build de producción del frontend (npm run build) compila limpio."
+    "actual": "Monitor BROODER_7_CYCLES con TEMP/CYCLE/ALERT/LCD/STATE",
+    "arranque": "bash start.sh --dashboard --port COM3",
+    "url": "http://localhost:5173 en Windows; backend http://localhost:8000",
+    "backend": "backend/main.py + backend/brooder_stream.py, Python Windows, escucha pasivamente TEMP/HUM y STATE sin enviar órdenes ni STOP. DTR/RTS desactivados antes de abrir COM.",
+    "frontend": "Cuatro etapas/pines, centros/rangos/umbrales, sensor D2-D5, calefaccion A2, humidificacion D7, alarma pendiente/confirmada/recuperacion, puerta y diagnosticoLCD.",
+    "endpoints": [
+      "GET /api/brooder",
+      "GET /api/temperature",
+      "GET /api/temperature/history",
+      "WS /ws/temperature"
+    ],
+    "actualizacion": "Datos serie cada 2.5 s. Muestra sensor inválido/telemetría caducada o desconexión como desconocidos. Historial 120 muestras backend, hasta 60 frontend.",
+    "exclusividad": "Mientras corre ocupa COM3. Cerrar dashboard antes de subir firmware o ejecutar scripts serie. Cerrar dashboard no detiene el control autónomo.",
+    "estado": "Activo http://localhost:5173, backend:8000 COM3, BROODER_7_CYCLES",
+    "documentacion": "backend/README.md",
+    "lcd": "Panel LCD 1602A activo: distingue ACK I2C, prueba DDRAM, desconexion y datos caducados. Muestra direccion/pines y diagnostico desplegable. Verificado real en escritorio/movil."
   },
   "entornos": {
     "iot/.venv": "Entorno Linux del controlador (antes arduino/.venv). Contiene pySerial, que el Python de Windows reutiliza por ser Python puro.",
@@ -143,7 +386,15 @@
     "2026-09-14: el puente USB del Arduino se colgó (SerialTimeoutException al escribir, sin banner READY, CTS y DSR en bajo) aunque COM3 seguía enumerado. Se recuperó desconectando y reconectando el cable USB; el botón de reset no bastó.",
     "2026-09-22: se agregó un sensor DHT11 (temperatura y humedad). D0 (RX) y D2 (servo) chocaban con pines ya usados; quedó en D5. Comando serie TEMP READ.",
     "2026-09-22: se construyó un dashboard web (backend FastAPI + frontend React) que reutiliza el mismo controlador serie que el resto del proyecto, verificado con datos reales del Arduino end-to-end (REST y WebSocket).",
-    "2026-09-22: reorganización completa por áreas. arduino/ y perip/ ya no existen; todo el hardware está en iot/ (firmware/ dividido por componente — pins.h, servo_control.h, relay_light.h, sound_sensor.h, dht11_sensor.h —, firmware-tests/, host/, diagnostics/, tracking/). Los modelos de visión están en ai/comp_vision/. El diagrama y BOM están en docs/. De paso se arregló que las pruebas de firmware (firmware-tests/test_light.cpp) no compilaban desde que se agregó el DHT11 (faltaban micros/delay/delayMicroseconds simulados)."
+    "2026-09-22: reorganización completa por áreas. arduino/ y perip/ ya no existen; todo el hardware está en iot/ (firmware/ dividido por componente — pins.h, servo_control.h, relay_light.h, sound_sensor.h, dht11_sensor.h —, firmware-tests/, host/, diagnostics/, tracking/). Los modelos de visión están en ai/comp_vision/. El diagrama y BOM están en docs/. De paso se arregló que las pruebas de firmware (firmware-tests/test_light.cpp) no compilaban desde que se agregó el DHT11 (faltaban micros/delay/delayMicroseconds simulados).",
+    "2026-10-26/27: motor 28BYJ-48 integrado primero como prueba independiente, luego puerta 12 vueltas/6 RPM del criadero.",
+    "2026-10-26/27: DHT11 movido D5->A1, alarma A0 y foquito/calefacción A2. Control autónomo BROODER_3 con EEPROM de extremos y comandos con verificación de byte.",
+    "2026-10-26/27: corregida puerta según usuario: inicio abierta, cerrar <=32 C, abrir tras >5 minutos de calor continuo >32 C. Inicio explícito S/O/A evita conservar cerrado al comenzar físicamente abierto.",
+    "2026-10-26/27: frontend/backend adaptados a telemetría pasiva del criadero; pruebas reales y visuales completas.",
+    "2026-10-26/27: apagado calefacción cambiado de 27 a 30 C, manteniendo encendido <26 C. Firmware actualizado y dashboard reiniciado y verificado.",
+    "2026-10-27: usuario solicita detener ejecución y actualizar contexto. Dashboard detenido y STOP Arduino confirmado.",
+    "2026-10-30: LCD D7/D6 implementado, compilado/cargado BROODER_4_LCD y respuesta real en 0x27 verificada. Dashboard restaurado; visibilidad fisica pendiente.",
+    "2026-10-31: BROODER_7_CYCLES cargado. D2-D5 perfiles, D7humidifica, centros/histeresis/permanencia, alarma temporizada. Dashboard probado. Pendiente sensor: id0; LCD sinrespuesta."
   ],
   "verificacion_realizada": {
     "fecha": "2026-09-14",
@@ -233,7 +484,14 @@
     "backend_dashboard": "cd /home/tucu/yo/person-tracking-camera-system/backend && /mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"$(wslpath -w \"$PWD/run.ps1\")\" -Port COM6",
     "frontend_dashboard": "cd /home/tucu/yo/person-tracking-camera-system/frontend && npm run dev -- --host",
     "cuenta_github": "gh api user --jq .login",
-    "estado_repo": "git -C /home/tucu/yo/person-tracking-camera-system status --short --branch"
+    "estado_repo": "git -C /home/tucu/yo/person-tracking-camera-system status --short --branch",
+    "dashboard_criadero": "bash start.sh --dashboard --port COM3",
+    "inicio_criadero": "Python Windows: iot/diagnostics/start_brooder.py --port COM3 (solo puerta físicamente abierta)",
+    "parada_criadero": "Python Windows: iot/diagnostics/stop_brooder.py --port COM3",
+    "tests_criadero": "g++ -std=c++11 -Wall -Wextra -Werror iot/firmware-tests/test_brooder.cpp -o /tmp/test_brooder && /tmp/test_brooder",
+    "tests_telemetria": "python3 -m unittest discover -s backend -p \"test_*.py\" -v",
+    "tests_frontend": "cd frontend && npm run build && npm run lint",
+    "nota_comandos_historicos": "Los diagnósticos de sonido/temperatura antiguos y modo cámara requieren restaurar servo_usb. No ejecutarlos contra BROODER_3."
   },
   "git_y_github": {
     "cuenta_destino": "cokoy-ng",
@@ -241,7 +499,7 @@
     "rama": "main",
     "autenticacion": "El usuario completó gh auth login por navegador. No se almacenan códigos, tokens ni claves en este contexto.",
     "otra_cuenta": "El usuario quiere conservar dos cuentas en este WSL. No borrar credenciales ni cerrar la otra sesión innecesariamente. La identidad del autor de commits es distinta de la cuenta de autenticación.",
-    "estado": "Árbol de trabajo limpio, sin cambios pendientes al cerrar la sesión del 2026-09-22. Últimos commits: f9245ed 'update estructuracion de carpetas' (la reorganización iot/ai/docs/backend/frontend), a4e3293 'S verifico funcionalidad de conxion de 5to pin analogico de sentor de temperatura y humedad' (DHT11), b26e591 'udate document', b0b56a7 'Add context'.",
+    "estado": "Cambios locales modificados y archivos nuevos sin commit. HEAD observado 7cbd21b: Actualizacion de contexto y ejecucion de todo el proeycto. No se hizo commit ni push en esta sesión; no asumir árbol limpio.",
     "repositorio_ia": {
       "url": "https://github.com/PLINIORZAVALA/emotion-detector.git",
       "rama": "dev",
@@ -256,13 +514,13 @@
     "precaucion": "No usar rsync --delete, git reset destructivo ni push --force."
   },
   "siguiente_sesion": [
-    "Leer este JSON completo primero (incluye dashboard_temperatura y verificacion_realizada_2026_09_22), luego iot/README.md, luego el apartado 'Incidencias abiertas' del README principal. No hace falta releer el código para entender la arquitectura: está toda descrita aquí.",
-    "Retomar por la incidencia sonido-d4-sin-senal (única de prioridad alta): pedir al usuario la prueba de tocar D4 contra GND mientras corre iot/diagnostics/check_sound.py. Ese resultado decide si el problema es el módulo o la placa.",
-    "Si el usuario lo autoriza, bajar los baudios a 57600 en servo_usb.ino y iot/host/serial_bridge.py, recargar con upload.ps1 y repetir la prueba de 600 PING para confirmar que desaparecen los ERR COMMAND.",
-    "Comprobar si la cámara USB 2.0 CAMERA volvió a conectarse antes de usar start.sh sin argumentos.",
-    "Antes de cualquier prueba serie, verificar el puerto COM actual (Get-CimInstance Win32_SerialPort) y que no haya otro proceso hablando con el Arduino — Arduino IDE abierto o un python.exe main.py ajeno al proyecto ya bloquearon el puerto antes. Tampoco correr tracking.py y el backend del dashboard a la vez: compiten por el mismo puerto COM.",
-    "El repo queda limpio (sin cambios sin commitear) al cerrar esta sesión; verificar con git status antes de asumir que sigue así.",
-    "El siguiente desarrollo funcional sería el seguimiento con cámara montada en el servo y, posteriormente, varias cámaras — ver objetivo_del_usuario.producto_futuro."
+    "Leer resumen, comportamiento_actual y cierre_sesion. BROODER_7_CYCLES activo; ignorar rangos antiguos26/30/32.",
+    "Sensor unico ahora D2-D5; A1 no se usa. Se confirmaron pines/mecanica por usuario; aun no detectado fisicamente tras carga.",
+    "D7 humidifica segun faltaHR y centro del ciclo; A2 calienta hacia centro. No invertir regla de D7: usuario confirmo que aumentaHR.",
+    "Dashboard activo y ocupaCOM3. Leer API antes de diagnosticos; cerrar dashboard para serie/carga.",
+    "LCD A4SDA/A5SCL, ultima prueba sinrespuesta. ACK anterior no prueba texto fisico. No falsear estado.",
+    "No referenciar puertaO/C sin extremo físico confirmado. EEPROM actual cerrada49152. No arrancar scripts stepper/camara contra brooder.",
+    "Cambios sin commit. Pruebas software/UI completas; falta conectar sensor y verificacion física de actuadores."
   ],
   "preferencias_de_trabajo": [
     "Comunicar en español, con comandos claros y pasos concretos.",
@@ -274,24 +532,110 @@
     "Las pruebas que requieren acción física del usuario se lanzan en segundo plano y se le avisa antes de empezar a contar el tiempo."
   ],
   "criadero_aves": {
-    "estado": "BROODER_3 cargado en COM3. Tras confirmar el usuario puerta físicamente abierta, cierre ejecutado: DOOR CLOSING, avance observado desde 0 y OK DOOR DONE, position=49152. Lecturas 23 C / 55 % HR. Nueva validación de comandos por trama para scripts.",
+    "estado": "AUTO sin ciclo confirmado; CYCLE id=0 pin=0 fan=0 mode=2; STATE heater=0 alarm=1 position=49152 target=49152 referenced=1 stopped=0; ALERT reasons=16.",
     "firmware": "iot/firmware/brooder/brooder.ino",
     "documentacion": "iot/firmware/brooder/README.md",
     "carga": "iot/host/upload_brooder.ps1",
     "pruebas": "iot/firmware-tests/test_brooder.cpp",
     "pines": {
       "A0": "alarma activa HIGH (tipo físico pendiente de comprobar)",
-      "A1": "mismo DHT11 antes en D5",
+      "A1": "No utilizado",
       "A2": "foquito/orden de calefacción activo HIGH; relé futuro requiere verificar polaridad",
-      "D8-D11": "IN1-IN4 driver 28BYJ-48 5V"
+      "D8-D11": "IN1-IN4 driver 28BYJ-48 5V",
+      "D2-D5": "DHT11 unico, señal selecciona ciclo1-4",
+      "D7": "Ventilador humidificador activo HIGH"
     },
-    "control": "BROODER_2: inicial abierto; <=32 C solicita cierre (incluye frío). >32 C inicial abierto permanece abierto; si cerrado espera más de 300000 ms continuos de calor para abrir. <=32 C, fallo de sensor o STOP reinicia temporizador. Calefacción ON <26/OFF >=30. Alarma inmediata fuera 26-32 o fallo/posición desconocida.",
+    "control": "D2 dias1-3 33-34C/60-70%; D3 dias4-7 30-32C/50-65%; D4 dias8-14 27-29C/50-60%; D5 dias15-21 24-27C/50-60%. Manual por cable; no calcula edad/fecha. Cierra T<=maximo del ciclo. Abre >5min continuos sobremaximo. Reinicio temporizador ante cambio ciclo/fallo/STOP. Referencia EEPROM sin alteracion.",
     "puerta": "12 vueltas por recorrido a 6 RPM. Sentido original cierra, inverso abre. Sin finales de carrera declarados; posición estimada por pasos. EEPROM conserva extremos; reinicio durante movimiento requiere referencia O/C. Posición inicial totalmente enrollada/abierta indicada por usuario.",
     "limitaciones": "Pruebas de lógica cubren cinco minutos continuos y reinicio de temporizador; verificada lectura real y estado final de cierre por contador. Falta observación física del usuario y prueba térmica real de apertura tras cinco minutos. Sin finales de carrera, conteo no confirma movimiento físico. No usar scripts stepper ni modo cámara de start.sh con este firmware; --dashboard ya está adaptado.",
     "serie": "115200; comandos de una letra terminados en newline, o tramas ~S53 / ~O4F / ~A41 / ~?3F con comprobación de byte. ? estado, S parada motor/calefacción, A auto, O referencia abierta, C cerrada.",
-    "inicio_sesion": "Ejecutar iot/diagnostics/start_brooder.py --port COM3 con Python Windows SOLO si físicamente abierta. Envía S, O, A mediante tramas verificadas: reinicia posición a abierto y cierra si <=32 C. A solo no reinicia la referencia. Reinicios eléctricos siguen conservando EEPROM por seguridad.",
+    "inicio_sesion": "iot/diagnostics/start_brooder.py --port COM3, con Python Windows, SOLO cuando la puerta esté físicamente abierta. Envía S/O/A en tramas verificadas con hasta 3 intentos por comando. Esto reinicia la referencia a abierta y cierra si <=32 C. Para reanudar desde la posición real guardada, usar A sin O. No inicializar como abierta si físicamente ya cerrada.",
     "dashboard": "Dashboard actualizado: backend/main.py escucha TEMP/HUM + STATE de BROODER_3 sin enviar comandos ni STOP. backend/brooder_stream.py valida y combina las muestras; /api/brooder, /api/temperature, /api/temperature/history y /ws/temperature. Frontend muestra A1 temperatura/humedad, A0 alarma, A2 calefacción, puerta y gráfica. Estados de salida no confirman sonido/giro físicos. Arranque bash start.sh --dashboard --port COM3. Backend ocupa COM3: cerrar dashboard antes de diagnósticos serie o carga.",
     "dashboard_verificado": "2026-10-26: dashboard iniciado con bash start.sh --dashboard --port COM3. REST e historial con datos reales; navegador de prueba muestra 25 C, 95 % HR, alarma/calefacción activadas y puerta cerrada por contador. Frontend build/lint y tres tests de telemetría OK. Vista escritorio y móvil sin errores JS ni desbordamiento horizontal. URL Windows http://localhost:5173; backend :8000.",
-    "calefaccion": "Enciende con temperatura <26 C, mantiene encendida hasta >=30 C, entonces apaga y no vuelve a encender hasta <26 C. Fallo de sensor siempre apaga."
+    "calefaccion": "Centro T 33.5/31/28/25.5. ON<=centro-margen, OFF>=centro+margen; margen0.25C ciclo1,0.5 resto. Permanencia10s; maximo/fallo/STOP cortan inmediatamente.",
+    "parada": "iot/diagnostics/stop_brooder.py --port COM3, con Python Windows. Envía ~S53 y exige STATE stopped=1 heater=0. Motor desenergizado y calefacción apagada; la alarma sigue supervisando. STOP es volátil: reset/desconectar-reconectar alimentación puede reactivar automático.",
+    "alarma": "30s continuos fuera de rangos;10s sensor/ciclo/puerta desconocida. Pulso1s/60s con condicion presente.15s estable para borrar; durante recuperacion ya no suena. Bits reasons1/2 temp,4/8HR,16sensor,32puerta.",
+    "paso_a_paso_pruebas": {
+      "programa": "iot/firmware/stepper_test/stepper_test.ino; cargador iot/host/upload_stepper.ps1",
+      "ordenes": "F/R: cuarto de vuelta; V: vuelta; M/N: seis vueltas en sentidos opuestos; S: parar; 115200 baudios. Configuración final 6 RPM. Firmware separado, no activo.",
+      "resultados": "Ejecutadas secuencias de 1, 6 y 12 vueltas, y 12 por sentido. A 60 RPM el usuario indicó luces sin giro. 6 RPM se usa en el criadero. OK DONE confirma secuencia, no movimiento físico.",
+      "temporales": "Scripts de /tmp se usaron para pruebas; no tratarlos como comandos vigentes ni ejecutarlos con el firmware brooder."
+    },
+    "verificacion_final": {
+      "firmware": "Arduino Uno compile/upload --verify OK:13136bytes flash/536RAM. Tests C++ centros,margenes,permanencias,maximos,fallos,selector,alarma,puerta,rollover OK. Tests LCD OK.",
+      "dashboard": "13 tests backend; build/lint; escenarios simulados4ciclos,alarmas,falla,caducidad; navegador escritorio/movil sin errores/desborde. API/WS reales verificados.",
+      "real": "Nuevo CYCLE/ALERT/STATE recibidos. Actualmente sin sensor en D2-D5: salidasheater/fan0. Puerta extremo cerrado conservado. No se movio referencia.",
+      "pendientes": "Usuario mover señal de A1 a D2-D5; verificar respuesta física humidificador/calefaccion/buzzer, calibracion ambiente y LCD."
+    },
+    "lcd": {
+      "firmware": "BROODER_7_CYCLES",
+      "pines": "SDA A4 / SCL A5",
+      "verificado": "Ultima telemetria: online=0 address=0 matches=0. Sigue sin respuesta; no declarar LCD funcional. Conserva pruebas DDRAM/reconexion.",
+      "pendiente": "Usuario confirma LCD oscuro; solo LED rojo adaptador. Necesaria foto/modelo del adaptador y observacion fisica. No afirmar que pantalla funciona ni que esta averiada.",
+      "autonomia": "Muestra T/HR y alterna AL/CAL, AUTO/STOP y puerta; funciona sin PC con alimentacion externa.",
+      "fallos": "Recuperacion cada 5s con motor desenergizado si falla I2C; tres mapas y polaridad autodetectados. No depende del frontend.",
+      "dashboard": "Monitor agregado al frontend y API/WS (objeto lcd). Estado real memory_failed, adaptador responde 0x27. La ultima lectura DDRAM fue 204/204; valores diagnosticos pueden variar al reinicializar. No confirma luz/texto."
+    },
+    "humidificacion": "Centro HR65/57.5/55/55. D7 ON<=centro-2, OFF>=centro+2. Permanencia15s; maximo/fallo/STOP cortan inmediatamente."
+  },
+  "historico_camara_hardware": {
+    "placa": "Arduino Uno",
+    "servo": "SG90 posicional",
+    "senal_servo": "D2",
+    "rele_luz": "D3, activo en HIGH, señal de control de un módulo relé",
+    "sensor_sonido": "D4, salida digital DO del módulo, leído con INPUT_PULLUP",
+    "sensor_temperatura_humedad": "DHT11 de tres pines en D5, protocolo de un solo cable escrito a mano (iot/firmware/servo_usb/dht11_sensor.h). D0 (RX) y D2 (servo) se descartaron por chocar con pines ya usados.",
+    "alimentacion_documentada": "5V y GND según el montaje existente",
+    "puerto": "Variable entre sesiones (fue COM3, luego COM6 el 2026-09-22). Verificar siempre antes de usar.",
+    "baudios": 115200,
+    "camara_objetivo": "USB 2.0 CAMERA",
+    "camaras_disponibles_2026_09_14": [
+      "0: HP HD Camera",
+      "1: Camo"
+    ],
+    "resolucion_probada": "640x480",
+    "seguridad": "La tensión de red nunca se conecta a D3, D4 ni a la protoboard. El montaje de corriente alterna debe estar aislado y encerrado.",
+    "nota": "Seleccionar la cámara por nombre; el índice y el puerto deben verificarse si cambian las conexiones. No asumir que un OK serie o las luces RX/TX/L confirman giro físico ni encendido del foco."
+  },
+  "historico_camara_comportamiento_actual": {
+    "objetivo": "Rostro de mayor área; si no hay rostros, persona de mayor área. Sin identidad persistente entre fotogramas.",
+    "angulo": "Posición horizontal absoluta: izquierda 0, centro 45, derecha 90 grados.",
+    "estabilidad": "Tres detecciones consecutivas; cambios de hasta 5 grados separados al menos 150 ms; evita ajustes inferiores a 3 grados mientras está activo.",
+    "perdida": "STOP y liberación si no se detecta el objetivo durante un segundo.",
+    "luz": "Cada detección envía LIGHT PERSON cada 0.5 s. El Arduino mantiene el relé 30 s desde la última señal, de forma autónoma. Una palmada enciende; tres palmadas seguidas apagan salvo que la cámara siga viendo presencia en los últimos 1.5 s.",
+    "controles": "Espacio pausa/reanuda el servo. Q, Esc o cerrar ventana terminan. Ctrl+C solicita la parada desde WSL.",
+    "expresiones": "Etiqueta estimada entre angry, disgust, fear, happy, neutral, sad y surprise. No representa una medición del estado emocional y no gobierna el movimiento.",
+    "ejecucion": "Aplicación de escritorio en primer plano; no es un servicio systemd, HTTP ni un arranque automático al encender Windows."
+  },
+  "historico_camara_dashboard_temperatura": {
+    "que_es": "Dashboard web de temperatura/humedad en vivo, separado de tracking.py. No se abren ambos a la vez contra el mismo Arduino: el que tenga el puerto COM abierto bloquea al otro.",
+    "backend": "backend/main.py, FastAPI corriendo con el Python de Windows (necesita abrir el puerto COM). Importa USB de iot/host/serial_bridge.py. Arranque: backend/run.ps1 -Port <COMx>, invocado desde WSL vía el puente a PowerShell.",
+    "sondeo": "Cada 2.5 s (POLL_SECONDS en backend/main.py) en un hilo aparte (run_in_executor), porque pyserial bloquea y no se puede llamar directo desde el loop de asyncio.",
+    "endpoints": {
+      "GET /api/temperature": "Última lectura: {ok, temperature, humidity, timestamp} o {ok:false} si el sensor no respondió.",
+      "GET /api/temperature/history": "Últimas 120 lecturas (HISTORY_SIZE, ~5 minutos) en memoria, se pierden al reiniciar el backend.",
+      "WS /ws/temperature": "Push de cada lectura nueva a todos los clientes conectados."
+    },
+    "puertos_red": "Backend en localhost:8000 (Windows), frontend en localhost:5173 (WSL, con npm run dev -- --host). Ambos accesibles desde un navegador de Windows por localhost normal.",
+    "frontend": "frontend/ (React + Vite). App.jsx se conecta por WebSocket con reintento automático cada 2 s si falla; hace fetch inicial de /api/temperature/history para precargar el sparkline SVG (sin librerías de gráficos externas).",
+    "limitacion_red_wsl": "curl desde dentro de WSL hacia localhost:8000 (servicio de Windows) puede dar 'Connection refused' por cómo WSL2 reenvía puertos en esa dirección; hay que usar la IP del gateway (ip route | awk '/^default/ {print $3}') para probarlo desde una terminal de WSL. Un navegador nativo de Windows no tiene ese problema.",
+    "verificado": "2026-09-22: REST y WebSocket devolviendo datos reales del DHT11 (23°C, 47-48% humedad) en varias rondas de prueba, incluyendo después de la reorganización de carpetas. Build de producción del frontend (npm run build) compila limpio."
+  },
+  "cierre_sesion": {
+    "fecha": "2026-10-31",
+    "solicitud": "Crear ciclos manuales por D2-D5, humidificar D7, regular alrededor del centro y evitar alarma continua.",
+    "dashboard": "Activo http://localhost:5173",
+    "arduino": "AUTO sin ciclo confirmado; CYCLE id=0 pin=0 fan=0 mode=2; STATE heater=0 alarm=1 position=49152 target=49152 referenced=1 stopped=0; ALERT reasons=16.",
+    "lcd": "Sin comunicacion A4/A5 en ultima prueba.",
+    "pendiente": "Mover señal del DHT11 desde A1 a D2-D5 y comprobar lectura/salidas. Ningun reloj de inicio configurado.",
+    "advertencia_reinicio": "STOP volatil; vuelveAUTO cuando sensor/ciclo confirme."
+  },
+  "cierre_sesion_2026_10_27": {
+    "fecha": "2026-10-27",
+    "solicitud": "Detener lo que se esté ejecutando y actualizar este contexto.",
+    "dashboard": "Lanzador bash start.sh --dashboard --port COM3 detenido; backend Windows y Vite finalizados.",
+    "arduino": "STOP confirmado: TEMP 28 HUM 41; STATE heater=0 alarm=0 position=49152 target=49152 referenced=1 stopped=1.",
+    "advertencia_reinicio": "STOP no se guarda en EEPROM. Si se reinicia la placa, vuelve al control automático; no confundir cierre del dashboard con parada del Arduino.",
+    "pendiente_reanudacion": "Esperar petición del usuario. Para observar, iniciar dashboard; para reanudar desde cerrado, A; para empezar nueva sesión físicamente abierta, start_brooder.py. Nunca falsear referencia para provocar giro."
   }
 }

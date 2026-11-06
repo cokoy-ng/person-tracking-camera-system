@@ -1,0 +1,10 @@
+{
+  "ms_por_grado": {
+    "derecha": 2.2222222222222223
+  },
+  "ultimo": {
+    "direccion": "derecha",
+    "ms": 800,
+    "completado": true
+  }
+}

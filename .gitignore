@@ -1,1 +1,4 @@
 .env
+
+# Historial local persistente del criadero (no versionar datos)
+backend/data/

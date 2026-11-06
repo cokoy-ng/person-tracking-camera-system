@@ -8,10 +8,11 @@ if (!(Test-Path $cli)) { throw 'No se encontró arduino-cli.exe instalado.' }
 $sketch = Join-Path $env:TEMP 'camera-brooder\brooder'
 New-Item -ItemType Directory -Force -Path $sketch | Out-Null
  $source = Join-Path $PSScriptRoot '..\firmware\brooder'
-foreach ($name in 'brooder.ino', 'config.h', 'control.h', 'door.h', 'protocol.h', 'dht11_sensor.h') {
+foreach ($name in 'brooder.ino', 'config.h', 'cycles.h', 'control.h', 'manual_outputs.h', 'alarm_policy.h', 'door.h', 'protocol.h', 'dht11_sensor.h') {
     Copy-Item -LiteralPath (Join-Path $source $name) -Destination $sketch -Force
 }
-& $cli compile --fqbn arduino:avr:uno $sketch
+$libraries = Join-Path $env:LOCALAPPDATA 'Arduino15\libraries'
+& $cli compile --fqbn arduino:avr:uno --libraries $libraries $sketch
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 if (!$CompileOnly) {
     & $cli upload --fqbn arduino:avr:uno --verify --port $Port $sketch

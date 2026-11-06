@@ -10,6 +10,8 @@ import time
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'host'))
 from serial_bridge import serial
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'backend'))
+from brooder_stream import Telemetry
 
 
 def main():
@@ -50,10 +52,12 @@ def main():
         request('A', 'OK AUTO')
         deadline = time.monotonic() + 165
         last_report = 0
+        stream = Telemetry()
         while time.monotonic() < deadline:
             line = port.readline().decode('ascii', errors='replace').strip()
             if not line:
                 continue
+            reading = stream.feed(line)
             if line.startswith('STATE '):
                 if 'referenced=0' in line:
                     raise RuntimeError('Se perdio la referencia durante el recorrido.')
@@ -63,12 +67,10 @@ def main():
                 if 'position=49152 target=49152' in line:
                     print('CIERRE COMPLETADO POR CONTEO: ' + line, flush=True)
                     return
-            elif line.startswith('TEMP '):
-                temperature = float(line.split()[1])
-                if temperature > 32:
-                    print(line, flush=True)
-                    print('Temperatura alta: puerta abierta, automatico activo.', flush=True)
-                    return
+                if reading and reading['ok'] and reading['cycle']['valid'] and reading['cycle']['id']:
+                    if reading['temperature'] > reading['cycle']['temp_max']:
+                        print('Temperatura sobre el maximo del ciclo: automatico activo, puerta abierta.', flush=True)
+                        return
             else:
                 print(line, flush=True)
         raise RuntimeError('No se confirmo el cierre en el plazo; revisar sensor y estado.')

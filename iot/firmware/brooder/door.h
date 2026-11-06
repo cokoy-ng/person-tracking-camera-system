@@ -4,12 +4,12 @@ enum class DoorAction { Hold, Close, Open };
 class DoorPolicy {
  public:
   void reset() { hot = false; }
-  DoorAction sample(float temperature, bool valid, uint32_t now) {
+  DoorAction sample(float temperature, bool valid, uint32_t now, float upper = 32) {
     if (!valid || !(temperature >= -20 && temperature <= 80)) {
       reset();
       return DoorAction::Hold;
     }
-    if (temperature <= 32) {
+    if (temperature <= upper) {
       reset();
       return DoorAction::Close;
     }
