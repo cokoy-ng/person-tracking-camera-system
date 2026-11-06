@@ -477,4 +477,15 @@ desde un Windows vacío.
 
 ### Arranque con verificación de conexión
 
-Ejecuta `./sh/levantar_todo.sh` desde WSL para iniciar el dashboard y comprobar lecturas nuevas del Arduino y el canal WebSocket. Usa `./sh/levantar_todo.sh --watch` para mantener la vigilancia. Consulta [las opciones del lanzador](docs/MONITOREO.md).
+Ejecuta `./sh/monitoreo_pollitos.sh` desde WSL para iniciar el dashboard y comprobar lecturas nuevas del Arduino y el canal WebSocket. Usa `./sh/monitoreo_pollitos.sh --watch` para mantener la vigilancia. Consulta [las opciones del lanzador](docs/MONITOREO.md).
+
+Incluye cámara USB y [detección experimental de pollitos](ai/comp_vision/chick-monitor/README.md)
+en la misma página: **Ver cámara** muestra recuadros, confianza y conteo estimado.
+La inferencia usa un proceso aislado y no envía órdenes al Arduino. El modelo aún
+requiere validación en recién nacidos y tiene falsos positivos observados.
+
+Incluye IDs temporales, trayectorias cortas, cercanía relativa, grupos sostenidos
+y conteo por zonas. Dentro de la cámara usa **Configurar zonas y cercanía** para
+dibujar comedero, bebedero y calefacción; las posiciones se guardan solo al pulsar
+**Guardar configuración**. Los IDs pueden cambiar por cruces u oclusiones y las
+distancias no están calibradas en centímetros.

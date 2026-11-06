@@ -1,10 +1,64 @@
 import { useEffect, useState } from 'react'
 import './App.css'
+import VisionScene from './VisionScene'
 
 const API = import.meta.env.VITE_API_BASE || `http://${window.location.hostname}:8000`
 const LIMIT = 60
 const fmt = n => Number(n).toLocaleString('es-PE', { maximumFractionDigits: 2 })
 const doorNames = { open: 'Abierta', closed: 'Cerrada', opening: 'Abriendo', closing: 'Cerrando', unknown: 'Sin referencia', paused: 'En pausa', sensor_fault: 'Detenida por sensor' }
+
+function CameraPanel() {
+  const [visible, setVisible] = useState(false)
+  const [camera, setCamera] = useState(null)
+  const [streamError, setStreamError] = useState(false)
+  const [vision, setVision] = useState(null)
+  const [now, setNow] = useState(0)
+  useEffect(() => {
+    if (!visible) return
+    const controller = new AbortController()
+    let timer
+    async function update() {
+      try {
+        const response = await fetch(`${API}/api/vision`, { signal: controller.signal, cache: 'no-store' })
+        if (!response.ok) throw new Error('Visión no disponible')
+        const data = await response.json()
+        if (!controller.signal.aborted) setVision(data)
+      } catch {
+        if (!controller.signal.aborted) setVision({ status: 'unavailable', fresh: false })
+      } finally {
+        if (!controller.signal.aborted) timer = setTimeout(update, 250)
+      }
+    }
+    update()
+    const freshness = setInterval(() => setNow(Date.now()/1000), 250)
+    return () => { controller.abort(); clearTimeout(timer); clearInterval(freshness) }
+  }, [visible])
+  useEffect(() => {
+    const controller = new AbortController()
+    let timer
+    async function update() {
+      try {
+        const response = await fetch(`${API}/api/camera`, { signal: controller.signal, cache: 'no-store' })
+        if (!response.ok) throw new Error('Sin conexión con la cámara')
+        const data = await response.json()
+        if (!controller.signal.aborted) { setCamera(data); setStreamError(false) }
+      } catch {
+        if (!controller.signal.aborted) setCamera({ ok: false, error: 'No se pudo conectar con la cámara. Reintentando…' })
+      } finally {
+        if (!controller.signal.aborted) timer = setTimeout(update, 3000)
+      }
+    }
+    update()
+    return () => { controller.abort(); clearTimeout(timer) }
+  }, [])
+  const fresh = camera?.ok && !streamError && vision?.fresh && now-vision.captured_at >= 0 && now-vision.captured_at <= 1.5
+  return <section className="panel camera-panel" aria-label="Cámara del criadero">
+    <div className="section-heading"><div><h2>Cámara del criadero</h2><p className="subtle" role="status">{camera === null ? 'Comprobando cámara…' : camera.ok ? 'Cámara conectada · Video en vivo' : camera.error || 'Cámara no disponible'}</p></div>
+      <button aria-expanded={visible} aria-controls="camera-view" onClick={() => { setVisible(!visible); setVision(null); setNow(0) }}>{visible ? 'Ocultar cámara' : 'Ver cámara'}</button></div>
+    {camera?.ok && <p className="camera-metrics">Captura: {fmt(camera.fps ?? 0)} FPS{visible && camera.viewers > 0 ? ` · Envío: ${fmt(camera.stream_fps)} FPS · ${fmt(camera.frame_age_ms)} ms hasta el backend` : ''}</p>}
+    {visible && <VisionScene camera={camera} vision={vision} fresh={fresh} streamError={streamError} onStreamError={() => setStreamError(true)} api={API} />}
+  </section>
+}
 
 function Chart({ history, profile }) {
   const valid = history.filter(r => r.ok)
@@ -213,6 +267,7 @@ export default function App() {
   const reasons = alert ? [[1,'Temperatura baja'],[2,'Temperatura alta'],[4,'Humedad baja'],[8,'Humedad alta'],[16,'Sensor o ciclo sin confirmar'],[32,'Puerta sin referencia']].filter(([bit]) => alert.reasons & bit).map(([,text]) => text).join(' · ') : ''
   return <main className="dashboard">
     <header><div className="brand"><span className="brand-icon">◒</span><div><span className="eyebrow">MONITOREO DEL CRIADERO</span><h1>Un vistazo al ambiente</h1></div></div><span className={`badge ${live ? 'good' : 'neutral'}`}><i />{live ? 'Arduino conectado' : 'Esperando conexión'}</span></header>
+    <CameraPanel />
     <section className={`summary ${sensor && profile && temp >= profile.temp_min && temp <= profile.temp_max && latest.humidity >= profile.humidity_min && latest.humidity <= profile.humidity_max ? 'normal' : 'warning'}`}>
       <div><span className="eyebrow">ESTADO DEL AMBIENTE</span><h2>{climate}</h2><p>Rango objetivo <strong>{range}</strong> · Lectura del DHT11 cada 2,5 segundos</p></div>
       <div className="mode"><span className="eyebrow">CONTROL</span><strong>{outputs ? latest.stopped ? 'Automático en pausa' : 'Automático' : 'Sin datos actuales'}</strong></div>

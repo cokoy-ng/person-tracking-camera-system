@@ -1,21 +1,110 @@
 {
+  "cierre_publicacion_2026_11_06": {
+    "prioridad": "ÚLTIMO ESTADO. Usuario solicitó actualizar este JSON y hacer commit y push del trabajo completo. Este bloque prevalece sobre notas anteriores que indiquen cambios sin autorizar para publicación.",
+    "solicitud": "Versionar contexto, cámara en dashboard, detección de pollitos, seguimiento con IDs, agrupamientos, zonas y nuevo lanzador; publicar en origin/main.",
+    "aplicacion": "Monitoreo de pollitos recién nacidos, http://localhost:5173/. Ejecutable vigente sh/monitoreo_pollitos.sh; conserva inicio, --estado, --watch, --stop, --port COMx y --ayuda. Reemplaza sh/levantar_todo.sh.",
+    "vision": "Código/modelo en ai/comp_vision/chick-monitor/. Captura USB única en RAM, backend transmite video y resultados al frontend. Modelo YOLOv8n con SHA256 verificado; worker versión2 en entorno Windows aislado. IDs temporales, trazos de hasta6s, cercanía relativa, grupos sostenidos y zonas dibujables. Sin control de actuadores mediante IA.",
+    "estado_comprobado": "Consulta real --estado devolvió0: frontend y backend disponibles, Arduino COM6 conectado, ciclo3,22C49%HR, calefacciónON,bombaOFF, stoppedfalse. Cámara320x240,4.0FPS. Detector activo2.1FPS/83.2ms y0 detecciones en esa muestra. Estados de software, no confirmación física ni garantía futura. No se detuvieron servicios para publicar.",
+    "zonas": "Configuración local conservada en backend/data/vision_config.json. Al finalizar pruebas: revisión4, zonas vacías restauradas y criterios12% diagonal/3IDs/5s. El usuario debe dibujar las posiciones reales; no inventarlas. No borrar configuración, CSV, SQLite Windows ni datos existentes.",
+    "verificaciones": "67 pruebas backend Windows OK; build/lint frontend OK; Chrome real: video, detección, editor con guardado y conflicto409; fixture privado de3IDs para trazos, grupos, ocupación y caducidad; móvil390 sin desborde/erroresJS. Flujo con seguimiento3.93FPS en intervalo observado. JSON válido y diffcheck correcto. No repetir instalación/pruebas sin cambios o fallos.",
+    "limites": "Modelo en evaluación: falsos positivos observados en objetos del montaje. No validado aún con pollitos recién nacidos reales. IDs pueden cambiar con cruces/oclusiones; no son identidad permanente ni censo. Distancias son porcentaje de diagonal, no centímetros. Agrupamiento no determina frío ni enfermedad.",
+    "git": {
+      "repositorio": "https://github.com/cokoy-ng/person-tracking-camera-system.git",
+      "rama": "main",
+      "base_remota_verificada": "c7df5c7; HEAD y origin/main sincronizados antes de preparar esta publicación",
+      "mensaje_commit": "Integra visión de pollitos con cámara, seguimiento y zonas en el dashboard",
+      "referencia": "Este bloque se versiona junto con la integración; consultar git log -1 --oneline y git status para la revisión y sincronización.",
+      "autorizacion": "Commit y push solicitados explícitamente por el usuario en esta sesión.",
+      "cuentas": "Publicación con la sesión guardada cokoy-ng; restaurar PLINIORZAVALA como activa y conservar ambas cuentas. Autor del commit mantiene la identidad configurada del repositorio.",
+      "excluidos": "backend/data, .runtime, capturas de pruebas, entornos Python y credenciales; permanecen locales o ignorados."
+    },
+    "retomar": [
+      "Leer este bloque y seguimiento_zonas_2026_11_06 primero.",
+      "Consultar ./sh/monitoreo_pollitos.sh --estado antes de asumir servicios activos.",
+      "Para ver resultados: Ver cámara. Para zonas: Configurar zonas y cercanía → Dibujar → Guardar configuración.",
+      "Conservar bomba exclusivamente manual y referencia EEPROM; publicar código no autoriza maniobras ni recargas de firmware."
+    ]
+  },
+  "seguimiento_zonas_2026_11_06": {
+    "prioridad": "ESTADO MÁS RECIENTE. Usuario autorizó IDs temporales, agrupamiento y zonas sobre la cámara. Este bloque prevalece sobre descripciones históricas de tracking/behavior reservados o sin implementar.",
+    "funciones": "Visión worker versión 2. tracking/temporary.py asocia detecciones geométricamente con predicción por velocidad y coincidencia uno a uno. IDs temporales crecientes por sesión, confirmados tras dos observaciones; retención máxima sin observar 1 s y sin cajas fantasma. Trayectorias hasta 24 observaciones y 6 s. Cruces, oclusiones, cambios de cámara o reinicios pueden cambiar IDs; no es identificación permanente ni censo.",
+    "cercania": "behavior/spatial.py calcula distancia entre centros en píxeles dividida por diagonal de imagen, no centímetros. Publica vecino más cercano y pares próximos. Grupos son componentes conectadas, no todos los miembros mutuamente próximos. Defaults: cercanía12%, mínimo3 IDs confirmados, persistencia5s. Continuidad con Jaccard>=0.5 y separación entre observaciones<=1s; pérdida del mínimo, de observación o cambio de criterios reinicia duración.",
+    "zonas": "Comedero, Bebedero y Calefacción se dibujan arrastrando rectángulos normalizados en el video: Ver cámara → Configurar zonas y cercanía → Dibujar → Guardar configuración. Cancelar no guarda. Zonas inicialmente vacías; no inventar posiciones. Conteo por centro de detecciones confirmadas visibles; zonas superpuestas pueden contar mismo ID. Si se mueve cámara, redibujar. No infiere que comen/beben ni causa térmica.",
+    "persistencia": "behavior/configuration.py valida y guarda atómicamente backend/data/vision_config.json, ignorado por Git. Revisión impide sobrescribir otra pestaña (409); archivo dañado se conserva y bloquea guardado. No borrar datos ni repetir instalación: dependencias y modelo anteriores se reutilizan.",
+    "api_y_ui": "GET/POST /api/vision/config pasan al worker local8767/config. GET/api/vision incluye detecciones con track_id,confirmed,trail, tracking_session, groups, near_pairs, nearest_neighbors, zone_counts y configuration. Backend valida coordenadas, deriva conteos de zonas y elimina resultados caducados. frontend/src/VisionScene.jsx muestra overlays, vecinos y editor; IDs con ? aún no confirmados. Sin análisis reciente no equivale a cero.",
+    "validacion": "67 tests backend Windows OK; frontend build/lint OK. Chrome real vio ID temporal en captura, dibujó y guardó zona, leyó persistencia y comprobó 409 con revisión antigua. Zonas originales restauradas (revision4, zones[], criterios12%/3/5 al verificar). Fixture solo en página privada comprobó3 IDs, trazos, enlaces, grupo sostenido, conteos, vecinos y retiro por caducidad; no se publicó en servicio. Móvil390 sin desborde ni erroresJS. Video35imágenes/~10s=3.93FPS, gap máximo0.95s observado. Consulta IA2.0FPS/151.9ms; métricas del intervalo, no garantías.",
+    "estado": "Capturador USB se conservó; se reiniciaron solo backend y worker sin órdenes de actuadores. Backend COM6/ciclo3,22C49%HR, calefacciónON,bombaOFF durante verificación; 7 lecturas nuevas y WS real. Servicios, captura e inferencia quedan activos en http://localhost:5173/.",
+    "limites": "Modelo continúa en evaluación con falsos positivos observados. No se validó estabilidad de IDs ni precisión de grupos con pollitos reales. No activar bomba, servo, puerta, alarma ni calefacción mediante resultados visuales. Conservar EEPROM y control climático actual. No se hizo commit ni push."
+  },
+  "vision_pollitos_integrada_2026_11_06": {
+    "prioridad": "ESTADO VIGENTE: usuario autorizó primera integración visual con resultados sobre cámara del frontend. Complementa y prevalece sobre bloques históricos de cámara sin IA.",
+    "directorio": "ai/comp_vision/chick-monitor/ con detector, tracking, behavior, models, evaluation. Activa detección/conteo; tracking y behavior quedan documentados para futuras etapas, no implementados ni anunciados como funcionales.",
+    "modelo": "drcardinal/chicken-detector weights/best.pt, revisión1f22e8083f7e6109edd47c5ef17f735a7241af05. Modelo YOLOv8n clasechicken, localmodels/chicken-yolov8n.pt, SHA256b0da5534bf1afd6675fa2a68f11a6d66c4a18b306f5e115828fea3c5058597a2. Umbral0.4, NMS0.45, imgsz640, máximo100. CheckpointdeclaraAGPL3; procedenciaenmodels/provenance.json. No se copió aplicaciónStreamlit ni se usa best_seg.pt.",
+    "entorno": "Windows LOCALAPPDATA/chick-monitor/venv separado de cámara/TF/sensores. Python3.12, torch2.6.0+cpu, torchvision0.21.0+cpu, ultralytics8.3.85, numpy1.26.4, OpenCV4.11.0.86. Instalaciónúnica evaluation/setup_windows.py; no repetir sin fallos/cambios. CHICK_VISION_PYTHON permite otra rutaWindows.",
+    "arquitectura": "scrips/camera_capture.py mantiene únicolectorUSB y videoRAM8766; nuevoGET/frame?after=seq entregaúltimoJPEG. Worker ai/comp_vision/chick-monitor/worker.py consumeJPEG sin abrirUSB/COM, inferenciaCPUprocesoindependiente y estadoHTTP8767soloWindowsloopback. scrips/vision_pollitos.pygestiona. BackendGET/api/vision valida y normaliza, no importaTorch. Frontendpoll250msmientrasvisible, recuadrosconfianza y posiblespollitos, FPSIA/tiempo; sinresultado noequivaleacero; caducidad1.5sretirarecuadros.",
+    "lanzador": "sh/monitoreo_pollitos.sh inicia/reutiliza sensores, frontend, cámara y visión; estado/watch/stop incluyen detector. .runtime/vision.log. No se modifica firmware ni se ordenan actuadores. Bomba solo manual y EEPROM conservada.",
+    "validacion": "54testsbackendOK, frontendbuild/lintOK. Modelo probó imagen pública de aves:25detecciones77ms; captura de montaje sin aves:1falsopositivo0.8912/80.9ms. No son métricasdeexactitud ni validaciónenreciénnacidos. Documento evaluation/SMOKE_TEST.md.",
+    "navegador": "ChromeWindowsreal: APIvisiónreadyfresh,4.1FPSIA,79.3msinferenciamuestra. Recuadros/conteoprobadosconfixturelimitadoapáginadetest,alineación,retirodecaducados,restauracióndatosreales. Video conIA:51imágenes/~12s=4.09FPS, p95captura→navegador8.30ms,máximo265.49ms; móvil390sin desborde,sinerrorJS,ver/ocultar/reabriryreconexiónOK. Arduino conectado; COM6ciclo3,21C48%HR,heaterONbombaOFF alverificar;7lecturasnuevasyWSreal.",
+    "estado_final": "Servicios y captura e inferencia quedan activos en http://localhost:5173/. Detector en evaluación; falsos positivos observados en montaje. No afirmar que conteo es censo real ni que modelo ya reconoce con precisión pollitos recién nacidos. Sin commit/push de esta integración.",
+    "analisis_previos": "Chicken-Behavior-Analysis útil para reglasactividad/agrupamiento; checkpointSavedModelincompleto falta variables.data. chicken-detector best_seg.pt es YOLO11detect21clases, nosegmentación, requirementsdesfasados; no incorporarlo sin revisión. No diagnosticar enfermedades con etiquetas del modelo."
+  },
+  "renombre_lanzador_2026_11_06": {
+    "prioridad": "Nombre vigente del ejecutable. Reemplaza referencias históricas a sh/levantar_todo.sh en este contexto.",
+    "aplicacion": "Monitoreo de pollitos recién nacidos",
+    "ejecutable": "sh/monitoreo_pollitos.sh",
+    "uso": "./sh/monitoreo_pollitos.sh inicia sensores, backend, frontend y cámara. Conserva --estado, --watch, --stop, --port COMx y --ayuda.",
+    "alcance": "Renombrado ejecutable y actualizadas referencias en README, docs y auxiliares Python. No se reinician servicios ni se envían órdenes al Arduino."
+  },
+  "camara_integrada_2026_11_06": {
+    "prioridad": "ESTADO MÁS RECIENTE: usuario corrigió la vista separada; la cámara debe verse dentro de http://localhost:5173 mediante el backend. Este bloque prevalece sobre cierres históricos.",
+    "inicio": "bash sh/monitoreo_pollitos.sh inicia frontend, webcam Windows y backend/Arduino; scrips/camara.py gestiona la cámara con el entorno existente iot/tracking/.venv-win.",
+    "camara": "USB 2.0 CAMERA por nombre, captura sin ventana de escritorio. Botones Ver cámara/Ocultar cámara en dashboard. Backend GET/api/camera estado y GET/api/camera/stream MJPEG. scrips/camara.py gestiona scrips/camera_capture.py: Media Foundation, último JPEG en RAM, HTTP interno Windows127.0.0.1:8766; backend/camera_stream.py retransmite sin bloquear sensores, sin archivos por fotograma y sin pausas artificiales. Descarta video atrasado >500ms. Sin IA ni historial de video. Logs .runtime/camara.log. Estado frontend incluye FPScaptura/envío y edad hasta backend, no latencia total del sensor.",
+    "gestion": "--estado incluye cámara; --watch consulta también video; --stop cierra cámara y libera USB además de frontend/backend. Reutiliza vista integrada activa y reemplaza vista antigua de iot/tracking/camera.py si sigue abierta.",
+    "fps_y_diagnostico": "Usuario reportó video trabado. Transporte anterior:3.19FPS en12s, maxgap441ms. Sin web, DirectShow3.12FPS, MediaFoundation4.11FPS. Consulta nativa WinRT GetAvailableMediaStreamProperties anunció solo320x240 YUY2 a4 y2FPS; no anunciar30FPS disponibles. Se eligióMediaFoundation. Chrome real tras cambioRAM:50fotogramas en~12s,4.0276FPS,maxgap331.5ms; edad captura→navegador p95=9.114ms,max326.087ms (no incluye exposición del sensor). Durante reinicio usuario observó aviso sin imágenes; video restaurado y confirmado en Chrome al finalizar. No diagnosticar causa física del límite por estas mediciones.",
+    "verificado": "Chrome Windows real: video320x240 dentro frontend, ver/ocultar/reabrir, móvil390 sin desborde, desconexión simulada y recuperación, captura continua y Arduino conectado. 49testsbackendOK, frontendbuild/lintOK. Reinicio servicios sin órdenes de actuación: COM6ciclo3,21C47%HR,calefacciónON,bombaOFF; 7lecturasnuevas y WebSocket real. Servicios y captura web quedan activos; no ventana separada. Verificaciones describen intervalo observado, no garantizan estado futuro.",
+    "reglas": "Cámara independiente del puerto COM; no envía órdenes al Arduino. Conservar bomba manual, EEPROM y referencia de puerta. Cerrar servicios no detiene control autónomo. Fallo de cámara no impide intentar iniciar sensores."
+  },
+  "cierre_sesion_2026_11_05": {
+    "prioridad": "ÚLTIMO ESTADO DE CIERRE. Usuario pidió actualizar contexto y terminar aquí. Este bloque prevalece sobre afirmaciones históricas de servicios activos, vigilancia activa o cambios pendientes de publicar.",
+    "solicitud": "Actualizar CONTEXTO_PROYECTO.json hasta este punto. No se solicitó arrancar ni parar servicios en este cierre.",
+    "trabajo_completado": "Creado sh/levantar_todo.sh siguiendo el ejemplo tr-ml: inicio verificado, --estado, --stop, --watch, --port COM6 y --ayuda. Ayuda dentro del ejecutable y comandos impresos al iniciar. sh/ contiene solo el ejecutable; auxiliar en scrips/monitor_servicios.py, guía en docs/MONITOREO.md.",
+    "validaciones": "bash -n, Python py_compile y git diff --check correctos. Probados estado, cierre de servicios y repetición de parada. Arranque con backend previamente detenido detectó COM6; 7lecturas nuevas en al menos15s y WebSocket real,21C44%HR,ciclo3. Son verificaciones anteriores, no estado actual.",
+    "estado_al_cerrar": "Consulta real ./sh/levantar_todo.sh --estado: Frontend CAÍDO; backend NO DISPONIBLE, conexión HTTP localhost8000 rechazada (WinError10061). Comando devolvió1. No se reinició nada ni se enviaron órdenes. La consulta HTTP no confirma ausencia de procesos ni estado físico del Arduino.",
+    "arduino": "Última telemetría válida durante las pruebas previas: BROODER_16_MANUAL_PUMP,COM6,D4ciclo3,21C44%HR,stoppedfalse,calefacciónON,bombaOFF. Sin backend disponible al cierre no hay confirmación actual de sensor, salidas o motores; no asumir hardware apagado.",
+    "reglas": "BombaD7 exclusivamente manual; ventiladorD8/calefacciónD9 automáticos según ciclo físicoD2-D5. ServoD6 y puertaD10-D13 manuales. No cambiar ni borrar referenciaEEPROM; registrar extremo solo con confirmación física. Polaridad físicaD9 sigue pendiente.",
+    "parada": "--stop cierra frontend/backend y vigilancia de esta versión; no envía STOP ni apaga alarma ni corta alimentación de Arduino. Para detener actuadores usar Pausar y detener en dashboard y esperar confirmación; alarma por control aparte. STOP es volátil al reiniciar placa. Arrancar monitor no autoriza movimientos ni referencias.",
+    "git": {
+      "repositorio": "https://github.com/cokoy-ng/person-tracking-camera-system.git",
+      "rama": "main",
+      "ultimo_commit_publicado": "c7df5c7 — Agrega lanzador de servicios con estado, parada y verificación de Arduino",
+      "commit_anterior_publicado": "a53cedc — Integra control manual, ciclos físicos y monitoreo del criadero",
+      "estado_previo_actualizacion_contexto": "main sincronizada con origin/main, árbol limpio. Commit y push completados. Esta actualización de contexto queda local sin nuevo commit/push.",
+      "cuentas": "Push con sesión guardada cokoy-ng; restaurada PLINIORZAVALA como activa. Conservar ambas cuentas; no guardar credenciales."
+    },
+    "retomar": [
+      "Leer este bloque primero; no usar siguiente_sesion histórico como estado vigente.",
+      "Para iniciar monitoreo: ./sh/levantar_todo.sh; --estado para consultar, --watch para vigilar, --stop para cerrar servicios, --ayuda para instrucciones.",
+      "Comprobar puerto Arduino actual al iniciar; no asumir COM6 fijo. No abrir otro lector serie ni cargar firmware mientras backend tenga el puerto.",
+      "Mantener backend/data y SQLite Windows LOCALAPPDATA/camera-brooder/events.sqlite3. No repetir instalaciones o pruebas sin cambios/fallos que lo justifiquen."
+    ]
+  },
   "lanzador_monitor_2026_11_05": {
     "solicitud": "Usuario pidió un .sh en sh/ para iniciar todos los servicios de monitoreo y verificar conexión estable.",
     "comando": "./sh/levantar_todo.sh inicia/verifica; --estado consulta sin iniciar; --stop cierra frontend/backend; --watch vigila; --port COM6 puerto explícito; --ayuda instrucciones.",
     "implementacion": "sh/levantar_todo.sh es el único archivo de sh/. Python en scrips/monitor_servicios.py y documentación en docs/MONITOREO.md. Frontend con setsid, backend Windows; reutiliza servicios. Identifica procesos del proyecto antes de cerrar. Logs .runtime/ ignorados.",
     "verificacion": "HTTP frontend, API backend, conexión serie, sensor/ciclo y salidas válidos, frescura<=8s, mínimo5lecturas nuevas durante15s continuos dentro45s, handshakeWebSocket y muestra real. Validación real reportó7lecturas21C44%HR,ciclo3,firmware16; calefacciónON,bombaOFF. No demuestra respuesta física ni estabilidad futura.",
     "seguridad": "No envía órdenes de actuadores, STOP, AUTO ni referencia de puerta. Conserva bomba exclusivamente manual y control autónomo existente.",
-    "git": "Archivos nuevos del lanzador aún sin commit/push.",
+    "git": "Publicado en main mediante commit c7df5c7 y push completado. Consultar cierre de sesión más reciente para estado operativo.",
     "parada": "--stop solo cierra servicios y vigilancia de esta versión; no envía STOP ni silencia alarma del Arduino. Para parar actuadores usar UI antes de cerrar; control autónomo sigue. No se altera EEPROM ni alimentación.",
     "validacion_lanzador": "Ayuda, estado, parada con puertos libres y repetición de parada comprobados. La vigilancia heredada de sh/monitor_servicios.py fue cerrada para liberar lock tras mover auxiliar. Arranque desde backend detenido confirmó PID3296/COM6,7lecturas21C44%HR/ciclo3 y WebSocket real. Servicios reanudados tras prueba; vigilancia antigua cerrada."
   },
   "monitoreo_reanudado_2026_11_05": {
-    "prioridad": "Estado más reciente: usuario solicitó levantar frontend y resolver ausencia de datos. Servicios reanudados para monitoreo; reemplaza cierre anterior solo respecto de servicios detenidos.",
+    "prioridad": "Histórico del inicio de esta sesión; servicios y PID descritos aquí no representan el estado al cierre. Consultar cierre_sesion_2026_11_05.",
     "servicios": "Frontend Vite http://localhost:5173 activo, sesión7792. Backend Windows http://localhost:8000 con COM6 activo, sesión72867, PID4524 observado. Verificar procesos antes de actuar.",
     "conexion": "Arduino Uno COM6 confirmado por Win32_SerialPort. Backend abre con DTR/RTS false y consulta estado; no se enviaron órdenes de activación, movimiento, referencia ni reanudación.",
     "ultima_consulta": "API reportó BROODER_16_MANUAL_PUMP, serial_connectedtrue, outputs_validtrue, sensorD4 ciclo3,22C44%HR,stoppedfalse,calefacciónON,ventiladorOFF,bombaOFF,servo y puerta detenidos. Estado lógico, no observación física. Arduino reporta automático activo; no atribuir activación a una orden del asistente.",
     "reglas": "BombaD7 exclusivamente manual. Conservar EEPROM de puerta y confirmar extremo físico antes de referenciar. Polaridad físicaD9 pendiente. No confundir arranque de monitor con autorización para mover actuadores.",
-    "git": "Usuario solicitó commit de todos los últimos cambios. No solicitó push."
+    "git": "Histórico: posteriormente se autorizaron y completaron commits a53cedc y c7df5c7 y sus pushes a main."
   },
   "cierre_total_2026_11_04": {
     "prioridad": "ÚLTIMO ESTADO. Usuario solicitó PARAR TODO y actualizar contexto. Reemplaza todos los bloques anteriores que indiquen servicios o controlautomático activos. No reiniciar sin nueva solicitud.",
@@ -524,13 +613,10 @@
     "precaucion": "No usar rsync --delete, git reset destructivo ni push --force."
   },
   "siguiente_sesion": [
-    "Leer resumen, comportamiento_actual y cierre_sesion. BROODER_7_CYCLES activo; ignorar rangos antiguos26/30/32.",
-    "Sensor unico ahora D2-D5; A1 no se usa. Se confirmaron pines/mecanica por usuario; aun no detectado fisicamente tras carga.",
-    "D7 humidifica segun faltaHR y centro del ciclo; A2 calienta hacia centro. No invertir regla de D7: usuario confirmo que aumentaHR.",
-    "Dashboard activo y ocupaCOM3. Leer API antes de diagnosticos; cerrar dashboard para serie/carga.",
-    "LCD A4SDA/A5SCL, ultima prueba sinrespuesta. ACK anterior no prueba texto fisico. No falsear estado.",
-    "No referenciar puertaO/C sin extremo físico confirmado. EEPROM actual cerrada49152. No arrancar scripts stepper/camara contra brooder.",
-    "Cambios sin commit. Pruebas software/UI completas; falta conectar sensor y verificacion física de actuadores."
+    "Leer este bloque primero; no usar siguiente_sesion histórico como estado vigente.",
+    "Para iniciar monitoreo: ./sh/levantar_todo.sh; --estado para consultar, --watch para vigilar, --stop para cerrar servicios, --ayuda para instrucciones.",
+    "Comprobar puerto Arduino actual al iniciar; no asumir COM6 fijo. No abrir otro lector serie ni cargar firmware mientras backend tenga el puerto.",
+    "Mantener backend/data y SQLite Windows LOCALAPPDATA/camera-brooder/events.sqlite3. No repetir instalaciones o pruebas sin cambios/fallos que lo justifiquen."
   ],
   "preferencias_de_trabajo": [
     "Comunicar en español, con comandos claros y pasos concretos.",

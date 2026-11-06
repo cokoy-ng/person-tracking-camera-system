@@ -18,6 +18,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from brooder_stream import Telemetry, REMAPPED_FIRMWARES
 from event_history import EventHistory
 from configuration_audit import software_snapshot
+from camera_stream import camera_status, mjpeg_frames
+from vision_stream import vision_status, configuration_request
+import urllib.error
+import json
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'iot' / 'host'))
 from serial_bridge import serial
@@ -137,6 +141,49 @@ app = FastAPI(title='Criadero · sensores y control', lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=['http://localhost:5173', 'http://127.0.0.1:5173'], allow_methods=['GET','POST'], allow_headers=['Content-Type'])
 
 
+@app.get('/api/camera')
+async def get_camera_status():
+    return await asyncio.to_thread(camera_status)
+
+
+@app.get('/api/vision')
+async def get_vision_status():
+    return await asyncio.to_thread(vision_status)
+
+
+@app.get('/api/vision/config')
+async def get_vision_configuration():
+    try:
+        return await asyncio.to_thread(configuration_request)
+    except (OSError, ValueError):
+        raise HTTPException(status_code=503, detail='Configuración visual no disponible')
+
+
+@app.post('/api/vision/config')
+async def save_vision_configuration(payload: dict):
+    try:
+        return await asyncio.to_thread(configuration_request, payload)
+    except urllib.error.HTTPError as exc:
+        try:
+            detail = json.loads(exc.read()).get('detail', 'No se pudo guardar la configuración visual')
+        except (ValueError, AttributeError):
+            detail = 'No se pudo guardar la configuración visual'
+        raise HTTPException(status_code=exc.code if exc.code in (400, 409) else 503, detail=detail)
+    except (ValueError, TypeError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except OSError:
+        raise HTTPException(status_code=503, detail='No se pudo conectar con el análisis visual')
+
+
+@app.get('/api/camera/stream')
+async def get_camera_stream():
+    status = await asyncio.to_thread(camera_status)
+    if not status['ok']:
+        raise HTTPException(status_code=503, detail=status['error'])
+    return StreamingResponse(mjpeg_frames(), media_type='multipart/x-mixed-replace; boundary=frame',
+                             headers={'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff'})
+
+
 class ControlRequest(BaseModel):
     output: Literal['heater','humidifier','exhaust','intake','alarm']
     mode: Literal['auto','off','on']
@@ -145,6 +192,8 @@ class ControlRequest(BaseModel):
 
 @app.exception_handler(RequestValidationError)
 async def invalid_request(request, exc):
+    if request.url.path == '/api/vision/config':
+        return JSONResponse(status_code=422, content={'detail':'Configuración visual inválida; revisa zonas y criterios'})
     if request.url.path in ('/api/control', '/api/device'):
         try:
             await asyncio.to_thread(event_history.audit_command,uuid.uuid4().hex,'rejected',None,None,None,

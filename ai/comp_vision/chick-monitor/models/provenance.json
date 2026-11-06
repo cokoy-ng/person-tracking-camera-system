@@ -1,0 +1,12 @@
+{
+  "file": "chicken-yolov8n.pt",
+  "sha256": "b0da5534bf1afd6675fa2a68f11a6d66c4a18b306f5e115828fea3c5058597a2",
+  "source": "https://github.com/drcardinal/chicken-detector",
+  "revision": "1f22e8083f7e6109edd47c5ef17f735a7241af05",
+  "url": "https://raw.githubusercontent.com/drcardinal/chicken-detector/1f22e8083f7e6109edd47c5ef17f735a7241af05/weights/best.pt",
+  "architecture": "YOLOv8n",
+  "classes": {"0": "chicken"},
+  "checkpoint_ultralytics": "8.3.85",
+  "checkpoint_license": "AGPL-3.0 (https://ultralytics.com/license)",
+  "validation": "No está validado todavía para pollitos recién nacidos del criadero."
+}

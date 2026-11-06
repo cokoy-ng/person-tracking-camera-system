@@ -119,7 +119,7 @@ def main():
     parser.add_argument('--watch', action='store_true', help='Seguir comprobando la conexión cada 5 segundos')
     args = parser.parse_args()
     if sys.platform != 'win32':
-        raise RuntimeError('Este auxiliar debe ejecutarse con Python de Windows desde levantar_todo.sh')
+        raise RuntimeError('Este auxiliar debe ejecutarse con Python de Windows desde monitoreo_pollitos.sh')
     if args.estado:
         sys.exit(show_status())
     if args.stop:
@@ -204,6 +204,10 @@ def main():
                 print(time.strftime('%H:%M:%S'), 'OK' if valid else 'SIN LECTURA VÁLIDA', data.get('temperature'), '°C', data.get('humidity'), '% HR', data.get('error') or '', flush=True)
             except (OSError, ValueError, KeyError) as exc:
                 print('Conexión no disponible:', exc, flush=True)
+            from camara import show_status as show_camera_status
+            show_camera_status()
+            from vision_pollitos import show_status as show_vision_status
+            show_vision_status()
 
 
 if __name__ == '__main__':
